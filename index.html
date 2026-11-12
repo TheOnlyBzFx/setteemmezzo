@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1b1b1b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="7½ FISM">
+<title>Sette e Mezzo · FISM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231e1e1e'/><text x='50' y='70' font-size='56' text-anchor='middle' fill='%23e8b84a' font-family='Georgia'>7½</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1e1e1e;--bg2:#171717;--panel:#262626;--line:#3a3a3a;--chalk:#f4f1ea;--red:#e0442f;--green:#5fd39a;--muted:#9a968e;--gold:#e8b84a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--chalk);font-family:Inter,system-ui,-apple-system,sans-serif}
+body{overflow:hidden;overscroll-behavior:none}
+#app{height:100vh;height:100dvh;display:flex;flex-direction:column}
+small{font-weight:400}
+.muted{color:var(--muted)}
+.hand{font-family:'Patrick Hand',cursive}
+.top{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 8px) 10px 8px;background:var(--bg2);border-bottom:1px solid var(--line);flex:none}
+.top .title{flex:1;font-weight:800;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .title small{color:var(--muted);font-size:13px;margin-left:4px}
+.logo{font-family:'Patrick Hand',cursive;font-size:30px;color:var(--gold);line-height:1;padding:0 4px}
+.scroll{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
+.btn{appearance:none;border:1px solid #444;background:#2e2e2e;color:var(--chalk);border-radius:14px;padding:13px 14px;font:600 16px Inter,system-ui,sans-serif;cursor:pointer;touch-action:manipulation;transition:transform .06s}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.sm{padding:8px 11px;font-size:14px;border-radius:10px}
+.btn.big{width:100%;padding:16px;font-size:18px;margin-top:10px}
+.btn[disabled]{opacity:.3;pointer-events:none}
+.btn small{display:block;font-size:12px;opacity:.75;margin-top:2px}
+.btn.sel{outline:3px solid var(--gold);outline-offset:-3px}
+/* home */
+.home{padding:14px 14px 40px;max-width:560px;margin:0 auto}
+.resume{width:100%;text-align:left;border-color:var(--gold);margin-bottom:4px}
+.rankhead{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:26px 0 8px;flex-wrap:wrap}
+.rankhead h2{margin:0;font-size:20px}
+.sync{font-size:12px;color:var(--muted)}
+ol.rank{list-style:none;margin:0;padding:0}
+ol.rank li{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid #2c2c2c;font-size:17px}
+ol.rank .pos{width:24px;text-align:right;color:var(--muted);font-size:14px}
+ol.rank li:nth-child(1) .pos{color:var(--gold);font-weight:800}
+ol.rank .em{width:28px;text-align:center;font-size:20px}
+ol.rank .nm{flex:1}
+ol.rank .sc{font-family:'Patrick Hand',cursive;font-size:24px}
+ol.rank .sub{font-size:13px;color:var(--muted);margin-left:6px}
+.pos-c{color:var(--green)}.neg-c{color:var(--red)}
+/* setup */
+.setup{padding:14px 14px 40px;max-width:560px;margin:0 auto}
+.setup h3{margin:18px 0 8px;font-size:16px;color:var(--muted);font-weight:600}
+.stepper{display:flex;align-items:center;gap:16px}
+.stepper span{font-family:'Patrick Hand',cursive;font-size:36px;min-width:40px;text-align:center}
+.stepper .btn{width:52px;height:52px;font-size:24px;padding:0}
+.slot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}
+.slot .num{width:22px;color:var(--muted);text-align:right}
+select,input{font:16px Inter,system-ui,sans-serif;background:#2b2b2b;color:var(--chalk);border:1px solid #474747;border-radius:12px;padding:12px}
+.slot select{flex:1;min-width:0}
+.newp{display:flex;gap:8px;width:100%;padding-left:30px}
+.newp input{flex:1;min-width:0}
+.newp input.emo{flex:none;width:64px;text-align:center}
+/* table */
+.tw{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;position:relative;background:var(--bg)}
+table.sh{border-collapse:separate;border-spacing:0;min-width:100%;font-family:'Patrick Hand',cursive}
+.sh th{position:sticky;top:0;z-index:2;background:var(--bg);padding:6px 4px 4px;border-bottom:2px solid var(--chalk);border-left:2px solid var(--chalk);font-weight:400;min-width:70px;text-align:center}
+.sh th .pe{font-size:17px;line-height:1.1}
+.sh th .pn{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px;margin:0 auto}
+.sh td{border-left:2px solid var(--chalk);padding:3px 6px;height:44px;vertical-align:middle}
+.sh .n{position:sticky;left:0;z-index:1;background:var(--bg);color:var(--muted);text-align:center;width:30px;min-width:30px;border-left:none;font-size:16px;padding:0;cursor:pointer}
+.sh thead .n{z-index:3}
+.cell{display:flex;justify-content:space-between;align-items:center;gap:3px;white-space:nowrap}
+.bet{font-size:25px;line-height:1}
+.bet.m{color:var(--gold)}
+.bet.empty{color:#555}
+.r{color:var(--red);font-size:17px;position:relative;top:-9px;margin-left:1px}
+.run{font-size:16px;color:var(--muted)}
+.run.p{color:#a8e6c4}.run.q{color:#f3a597}
+td.cur{background:rgba(232,184,74,.16)}
+tr.draft td:not(.n){background:rgba(255,255,255,.03)}
+tr.cut td{padding:0;height:auto;border-left:none}
+.cutbox{position:sticky;left:0;display:flex;align-items:center;gap:10px;border-top:3px solid var(--chalk);margin:2px 0 4px;padding:3px 8px;width:min(100vw,100%);font-family:Inter,sans-serif;font-size:12px;color:var(--muted)}
+.cutbox img{height:34px;filter:none}
+.sh tfoot td{position:sticky;bottom:0;z-index:1;background:#141414;border-top:2px solid var(--chalk);height:40px;font-size:22px;text-align:center}
+.sh tfoot td.n{z-index:3;color:var(--gold);font-size:18px}
+.empty-hint{padding:30px 16px;text-align:center;color:var(--muted);font-family:Inter,sans-serif}
+/* bottom sheet */
+.sheet{flex:none;background:var(--panel);border-top:1px solid #444;border-radius:18px 18px 0 0;padding:12px 12px calc(12px + env(safe-area-inset-bottom));max-height:60vh;max-height:60dvh;overflow:auto;box-shadow:0 -10px 30px rgba(0,0,0,.45)}
+.sheet h3{margin:0 0 10px;font-size:17px;font-weight:600}
+.sheet h3 b{font-weight:800}
+.sheet h3 small{color:var(--muted);font-size:14px}
+.shead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.prog{color:var(--muted);font-size:13px;padding-top:3px}
+.grid{display:grid;gap:8px}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.bigbtn{font-family:'Patrick Hand',cursive;font-size:30px;padding:10px 0}
+.bigbtn.dealer{font-family:Inter,sans-serif;font-size:15px;color:var(--gold)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.res{font-size:16px;padding:12px 8px}
+.res.win{border-color:#2f6b4c;background:#21342a}
+.res.lose{border-color:#7a2e24;background:#3a2320}
+.res.piste{width:100%;margin-top:8px;border-color:#5b5130;background:#332e1f}
+.glob{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #383838}
+.glob .lbl{font-size:12px;color:var(--muted);width:100%}
+.list{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
+.li{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:#2e2e2e;border:1px solid #3d3d3d;color:var(--chalk);border-radius:12px;padding:10px 12px;font:16px Inter,sans-serif;cursor:pointer}
+.li span:first-child{flex:1}
+.li b{font-family:'Patrick Hand',cursive;font-size:22px;font-weight:400}
+.li .ed{opacity:.5;font-size:13px}
+.li.dealer{border-color:#6b5a2a;background:#2f2a1d;cursor:default}
+.warn{background:#3a2320;border:1px solid #7a2e24;color:#ffb4a8;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
+.ok{background:#1f3328;border:1px solid #2f6b4c;color:#a8e6c4;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
+.pst{display:flex;align-items:center;gap:12px;margin:8px 0}
+.pst span{flex:1}
+.pst b{font-family:'Patrick Hand',cursive;font-size:34px;min-width:36px;text-align:center;font-weight:400}
+.pst .btn{width:52px;height:48px;padding:0;font-size:24px}
+canvas#sig{width:100%;height:140px;background:#1a1a1a;border:1px dashed #666;border-radius:12px;touch-action:none;display:block;margin-top:8px}
+.signrow{display:flex;gap:8px;align-items:center;margin-top:6px}
+.signrow select{flex:1}
+/* modal */
+#modal{position:fixed;inset:0;z-index:50;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6)}
+#modal.on{display:flex}
+.mbox{background:var(--panel);width:100%;max-width:520px;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;max-height:90dvh;overflow:auto}
+.mbox h3{margin:0 0 4px;font-size:19px}
+.mbox p{margin:0 0 6px;color:#cfcac0;line-height:1.4}
+.choice{text-align:left;padding:16px}
+.choice b{font-size:18px}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 60px);transform:translateX(-50%);background:#000;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
+#toast.on{opacity:.92}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal" onclick="if(event.target===this)closeModal()"><div class="mbox" id="mbox"></div></div>
+<div id="toast"></div>
+<script>
+/* =========================================================
+   CONFIGURAZIONE
+   DB_URL = indirizzo del database condiviso (Firebase Realtime Database).
+   Se è vuoto la classifica viene salvata solo sul telefono.
+   ========================================================= */
+const DB_URL = '';
+
+const SEED = [
+  ['Kiuppa','🍑',320],['Capitano','👨‍✈️',-480],['Giugi','🏳️',-70],['Luga','🧞‍♂️',410],
+  ['Meme','🐗',-1550],['Tia','🐦‍⬛',980],['Biondo','👨‍🦼‍➡️',1100],['Bazoo','🥁',-1710],
+  ['Espodelpoli','🏇',-900],['Pino','🌲',-20],['LucaMoro','🐲',190],['Bebote','🍼',100],
+  ['Fangus','🍄‍🟫',800],['Dessy','🍩',390],['Dani','🐌',420],['Fofana','💪🏻',-290],['Zac','🥖',310]
+];
+
+/* ---------- utility ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n);
+const sgn = n => n > 0 ? 'pos-c' : n < 0 ? 'neg-c' : '';
+const slug = n => (n || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '') || ('p' + Date.now().toString(36));
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+function seedObj() { const g = {}; SEED.forEach(([n, e, b], i) => g[slug(n)] = { name: n, emoji: e, base: b, order: i }); return g; }
+
+/* ---------- database (Firebase REST oppure locale) ---------- */
+function localGet(path) { let o = LS.get('sem_localdb', {}); for (const k of path.split('/').filter(Boolean)) o = o == null ? null : o[k]; return o ?? null; }
+function localPut(path, val) {
+  const root = LS.get('sem_localdb', {}); const ks = path.split('/').filter(Boolean); let o = root;
+  ks.slice(0, -1).forEach(k => { if (!o[k] || typeof o[k] !== 'object') o[k] = {}; o = o[k]; });
+  o[ks[ks.length - 1]] = val; LS.set('sem_localdb', root);
+}
+async function dbGet(path) {
+  if (!DB_URL) return localGet(path);
+  const r = await fetch(`${DB_URL}/${path}.json`, { cache: 'no-store' });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+async function dbPut(path, val) {
+  if (!DB_URL) { localPut(path, val); return; }
+  const r = await fetch(`${DB_URL}/${path}.json`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(val) });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+}
+
+let REG = LS.get('sem_cache', null);   // {giocatori:{id:{name,emoji,base,order}}, sessioni:{id:{date,deltas,...}}}
+let SYNC = 'loading';
+async function loadReg() {
+  try {
+    const data = (await dbGet('')) || {};
+    if (!data.giocatori) { data.giocatori = seedObj(); await dbPut('giocatori', data.giocatori); }
+    REG = { giocatori: data.giocatori, sessioni: data.sessioni || {} };
+    LS.set('sem_cache', REG);
+    SYNC = DB_URL ? 'cloud' : 'local';
+  } catch (e) {
+    SYNC = 'offline';
+    if (!REG) REG = { giocatori: seedObj(), sessioni: {} };
+  }
+  await flushPending();
+  render();
+}
+let flushing = false;
+async function flushPending() {
+  if (flushing) return; flushing = true;
+  const pend = LS.get('sem_pending', []);
+  try {
+    while (pend.length) {
+      const p = pend[0];
+      for (const [id, pl] of Object.entries(p.nuovi || {})) {
+        const ex = await dbGet('giocatori/' + id);
+        if (!ex) await dbPut('giocatori/' + id, pl);
+        if (REG && !REG.giocatori[id]) REG.giocatori[id] = ex || pl;
+      }
+      const { nuovi, ...rec } = p;
+      await dbPut('sessioni/' + p.id, rec);   // id fisso: riprovare non crea doppioni
+      if (REG) REG.sessioni[p.id] = rec;
+      pend.shift(); LS.set('sem_pending', pend); LS.set('sem_cache', REG);
+    }
+    if (SYNC === 'offline') SYNC = DB_URL ? 'cloud' : 'local';
+  } catch (e) { SYNC = 'offline'; }
+  flushing = false;
+}
+function allPlayers() {
+  const g = { ...(REG?.giocatori || {}) };
+  LS.get('sem_pending', []).forEach(p => Object.entries(p.nuovi || {}).forEach(([id, pl]) => { if (!g[id]) g[id] = pl; }));
+  return g;
+}
+function ranking() {
+  const g = allPlayers(); const sc = {};
+  for (const id in g) sc[id] = +g[id].base || 0;
+  const all = { ...(REG?.sessioni || {}) };
+  LS.get('sem_pending', []).forEach(p => all[p.id] = p);
+  for (const s of Object.values(all)) for (const id in (s.deltas || {})) sc[id] = (sc[id] || 0) + (+s.deltas[id] || 0);
+  return Object.keys(g).map(id => ({ id, name: g[id].name, emoji: g[id].emoji, score: sc[id] || 0 }))
+    .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+}
+
+/* ---------- regole / calcoli ---------- */
+// esiti: W vinto, L perso, W2 d'emblée, W3 triplée, L2 paga x2, L3 paga x3, P piste (w vinte, l perse)
+function rDelta(b, r) {
+  if (!r || typeof b !== 'number') return 0;
+  switch (r.k) {
+    case 'W': return b; case 'L': return -b;
+    case 'W2': return 2 * b; case 'W3': return 3 * b;
+    case 'L2': return -2 * b; case 'L3': return -3 * b;
+    case 'P': return ((r.w || 0) - (r.l || 0)) * b;
+  }
+  return 0;
+}
+function rLabel(r) {
+  if (!r) return '';
+  return { W: '+', L: '−', W2: '×2', W3: '×3', L2: '−×2', L3: '−×3' }[r.k] || `P${r.w}/${r.l}`;
+}
+function pDelta(h, i) {
+  const b = h.bets[i];
+  if (b === 'M') { let s = 0; G.players.forEach((_, j) => { if (j !== i && h.bets[j] !== 'M') s += rDelta(h.bets[j], h.res[j]); }); return -s; }
+  return rDelta(b, h.res[i]);
+}
+const dealerOf = h => G.players.findIndex((_, i) => h.bets[i] === 'M');
+const nonDealers = h => G.players.map((_, i) => i).filter(i => h.bets[i] !== 'M');
+function totals() { return G.players.map((_, i) => G.hands.reduce((s, h) => s + (h.stage === 'done' ? pDelta(h, i) : 0), 0)); }
+
+/* ---------- stato ---------- */
+let G = LS.get('sem_game', null);   // partita in corso
+const S = { view: G ? (G.ended ? 'summary' : 'game') : 'home', setup: null };
+function commit() { if (G) LS.set('sem_game', G); render(); }
+
+/* ---------- modali / toast ---------- */
+function modal(html) { $('#mbox').innerHTML = html; $('#modal').classList.add('on'); }
+function closeModal() { $('#modal').classList.remove('on'); }
+let _cfm = null;
+function confirmModal(title, html, ok, fn, danger = true) {
+  _cfm = fn;
+  modal(`<h3>${title}</h3><p>${html}</p>
+    <button class="btn ${danger ? 'red' : 'primary'}" onclick="closeModal();_cfm&&_cfm()">${ok}</button>
+    <button class="btn ghost" onclick="closeModal()">Annulla</button>`);
+}
+let _tt;
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove('on'), 2200); }
+
+/* ---------- render ---------- */
+function render() {
+  const a = $('#app');
+  if (S.view === 'home') a.innerHTML = homeHTML();
+  else if (S.view === 'setup') a.innerHTML = setupHTML();
+  else if (S.view === 'game' && G) { a.innerHTML = gameHTML(); afterGameRender(); }
+  else if (S.view === 'summary' && G) a.innerHTML = summaryHTML();
+  else { S.view = 'home'; a.innerHTML = homeHTML(); }
+}
+function goHome() { S.view = 'home'; render(); }
+function resume() { S.view = G.ended ? 'summary' : 'game'; render(); }
+
+/* ===== HOME ===== */
+function homeHTML() {
+  const r = ranking();
+  const syncTxt = { cloud: '☁️ Classifica condivisa', local: '📱 Salvata su questo telefono', offline: '⚠️ Offline: ultima copia salvata', loading: '⏳ Carico la classifica…' }[SYNC];
+  const pend = LS.get('sem_pending', []).length;
+  return `<header class="top"><div class="logo">7½</div><div class="title">Sette e Mezzo <small>FISM</small></div></header>
+  <div class="scroll"><div class="home">
+    ${G && !G.ended ? `<button class="btn resume" onclick="resume()">▶ Riprendi la partita in corso
+      <small>${G.type === 'fism' ? '🏆 Ufficiale FISM' : '🤙 A cazz de cane'} · ${G.players.length} giocatori · mano ${G.hands.length}</small></button>` : ''}
+    <button class="btn primary big" onclick="askType()">🃏 Nuova partita</button>
+    <div class="rankhead"><h2>🏆 Classifica FISM</h2><span class="sync">${syncTxt}${pend ? ` · ${pend} sessione da inviare` : ''}</span></div>
+    <ol class="rank">${r.map((p, i) => `<li><span class="pos">${i + 1}</span><span class="em">${esc(p.emoji)}</span><span class="nm">${esc(p.name)}</span><span class="sc ${sgn(p.score)}">${fmt(p.score)}</span></li>`).join('')}</ol>
+  </div></div>`;
+}
+function askType() {
+  if (G && !G.ended) {
+    confirmModal('C’è una partita in corso', 'Se ne inizi una nuova, quella in corso viene cancellata.', 'Cancella e ricomincia', () => { G = null; LS.del('sem_game'); askType(); });
+    return;
+  }
+  modal(`<h3>Che partita è?</h3>
+    <button class="btn choice" onclick="startSetup('fism')"><b>🏆 Partita Ufficiale FISM</b><small>Conta per il torneo: a fine sessione aggiorna la classifica</small></button>
+    <button class="btn choice" onclick="startSetup('ccdc')"><b>🤙 A cazz de cane</b><small>Solo per giocare: alla fine non salva niente</small></button>
+    <button class="btn ghost" onclick="closeModal()">Annulla</button>`);
+}
+
+/* ===== SETUP ===== */
+function startSetup(type) {
+  closeModal(); if (G && G.ended) { G = null; LS.del('sem_game'); }
+  S.setup = { type, n: 5, slots: Array.from({ length: 5 }, () => ({ sel: '', name: '', emoji: '' })) };
+  S.view = 'setup'; render();
+}
+function regList() { const g = allPlayers(); return Object.keys(g).map(id => ({ id, ...g[id] })).sort((a, b) => a.name.localeCompare(b.name)); }
+function setupHTML() {
+  const st = S.setup, pl = regList();
+  const used = new Set(st.slots.map(s => s.sel).filter(v => v && v !== '__new'));
+  return `<header class="top"><button class="btn sm ghost" onclick="goHome()">←</button><div class="title">${st.type === 'fism' ? '🏆 Partita Ufficiale FISM' : '🤙 A cazz de cane'}</div></header>
+  <div class="scroll"><div class="setup">
+    <h3>Quanti giocatori?</h3>
+    <div class="stepper"><button class="btn" onclick="setN(-1)">−</button><span>${st.n}</span><button class="btn" onclick="setN(1)">+</button></div>
+    <h3>Giocatori in ordine</h3>
+    ${st.slots.map((s, i) => `<div class="slot"><span class="num">${i + 1}</span>
+      <select onchange="setSlot(${i},this.value)"><option value="">— scegli —</option>
+        ${pl.map(p => `<option value="${esc(p.id)}" ${s.sel === p.id ? 'selected' : ''} ${used.has(p.id) && s.sel !== p.id ? 'disabled' : ''}>${esc(p.emoji)} ${esc(p.name)}</option>`).join('')}
+        <option value="__new" ${s.sel === '__new' ? 'selected' : ''}>➕ Nuovo giocatore…</option>
+      </select>
+      ${s.sel === '__new' ? `<div class="newp"><input placeholder="Nome" value="${esc(s.name)}" oninput="S.setup.slots[${i}].name=this.value"><input class="emo" placeholder="🙂" value="${esc(s.emoji)}" oninput="S.setup.slots[${i}].emoji=this.value"></div>` : ''}
+    </div>`).join('')}
+    <button class="btn primary big" onclick="startGame()">Inizia la partita ▶</button>
+  </div></div>`;
+}
+function setN(d) {
+  const st = S.setup; st.n = Math.max(2, Math.min(20, st.n + d));
+  while (st.slots.length < st.n) st.slots.push({ sel: '', name: '', emoji: '' });
+  st.slots.length = st.n; render();
+}
+function setSlot(i, v) { S.setup.slots[i].sel = v; render(); }
+function startGame() {
+  const st = S.setup, g = allPlayers(), players = [], seen = new Set();
+  for (let i = 0; i < st.slots.length; i++) {
+    const s = st.slots[i];
+    if (!s.sel) return toast(`Scegli il giocatore n° ${i + 1}`);
+    let p;
+    if (s.sel === '__new') {
+      const name = s.name.trim();
+      if (!name) return toast(`Scrivi il nome del giocatore n° ${i + 1}`);
+      const id = slug(name);
+      p = g[id] ? { id, name: g[id].name, emoji: g[id].emoji, isNew: false } : { id, name, emoji: s.emoji.trim() || '🃏', isNew: true };
+    } else p = { id: s.sel, name: g[s.sel].name, emoji: g[s.sel].emoji, isNew: false };
+    if (seen.has(p.id)) return toast(`${p.name} è stato scelto due volte`);
+    seen.add(p.id); players.push(p);
+  }
+  G = { id: 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), type: st.type, players, started: Date.now(),
+        hands: [{ bets: {}, res: {}, stage: 'bets' }], cuts: {}, w: { mode: 'bets', idx: 0, i: 0, draft: {}, review: false } };
+  S.view = 'game'; commit();
+}
+
+/* ===== PARTITA ===== */
+function gameHTML() {
+  return `<header class="top"><button class="btn sm ghost" onclick="goHome()">←</button>
+    <div class="title">Mano ${G.w.idx + 1}<small>${G.type === 'fism' ? '🏆 FISM' : '🤙 a cazz de cane'}</small></div>
+    <button class="btn sm red" onclick="askEnd()">FINE SESSIONE</button></header>
+  <div class="tw" id="tw">${tableHTML()}</div>
+  <div class="sheet" id="sheet">${sheetHTML()}</div>`;
+}
+function viewHand(idx) {
+  const h = G.hands[idx], w = G.w;
+  if (w.idx !== idx) return h;
+  if (w.mode === 'bets') return { bets: w.draft, res: {}, stage: 'draft' };
+  if (w.mode === 'res') return { bets: h.bets, res: w.draft, stage: 'draftres' };
+  return h;
+}
+function tableHTML() {
+  const P = G.players, run = P.map(() => 0);
+  let body = '';
+  G.hands.forEach((h, idx) => {
+    const vh = viewHand(idx), editing = G.w.idx === idx && (G.w.mode === 'bets' || G.w.mode === 'res');
+    if (h.stage === 'done') P.forEach((_, i) => run[i] += pDelta(h, i));
+    const showRun = h.stage === 'done' && !editing;
+    const curCol = editing && !G.w.review && G.w.piste == null ? (G.w.mode === 'bets' ? G.w.i : nonDealers(h)[G.w.i]) : -1;
+    const resComplete = nonDealers(vh).every(i => vh.res[i]);
+    body += `<tr class="${editing ? 'draft' : ''}"><td class="n" onclick="handMenu(${idx})">${idx + 1}</td>` + P.map((_, i) => {
+      const b = vh.bets[i];
+      let left, sup = '';
+      if (b === undefined) left = `<span class="bet empty">·</span>`;
+      else if (b === 'M') {
+        left = `<span class="bet m">M</span>`;
+        if ((vh.stage === 'done' || vh.stage === 'draftres') && resComplete) sup = `<span class="r">${fmt(pDelta(vh, i))}</span>`;
+      } else {
+        left = `<span class="bet">${b}</span>`;
+        if (vh.res[i] && vh.stage !== 'draft') sup = `<span class="r">${rLabel(vh.res[i])}</span>`;
+      }
+      const rv = showRun ? `<span class="run ${run[i] > 0 ? 'p' : run[i] < 0 ? 'q' : ''}">${fmt(run[i])}</span>` : '';
+      return `<td class="${i === curCol ? 'cur' : ''}"><div class="cell"><span>${left}${sup}</span>${rv}</div></td>`;
+    }).join('') + '</tr>';
+    const c = G.cuts[idx];
+    if (c) body += `<tr class="cut"><td colspan="${P.length + 1}"><div class="cutbox"><span>🃏 È uscita la matta · firmato da <b>${esc(c.signer)}</b></span>${c.sig ? `<img src="${c.sig}" alt="firma">` : ''}</div></td></tr>`;
+  });
+  const tot = totals();
+  return `<table class="sh"><thead><tr><th class="n">#</th>${P.map(p => `<th><div class="pe">${esc(p.emoji)}</div><div class="pn">${esc(p.name)}</div></th>`).join('')}</tr></thead>
+    <tbody>${body}</tbody>
+    <tfoot><tr><td class="n">Σ</td>${tot.map(t => `<td class="${sgn(t)}">${fmt(t)}</td>`).join('')}</tr></tfoot></table>`;
+}
+function afterGameRender() {
+  const tw = $('#tw');
+  if (tw && G.w.idx === G.hands.length - 1) tw.scrollTop = tw.scrollHeight;
+  if (G.w.mode === 'sign') initSig();
+  wake();
+}
+
+function sheetHTML() {
+  const w = G.w;
+  if (w.mode === 'bets') return betsSheet();
+  if (w.mode === 'wait') return waitSheet();
+  if (w.mode === 'res') return resSheet();
+  if (w.mode === 'after') return afterSheet();
+  if (w.mode === 'sign') return signSheet();
+  return '';
+}
+const pn = i => `${esc(G.players[i].emoji)} ${esc(G.players[i].name)}`;
+const cancelBtn = () => G.w.ret ? `<button class="btn sm ghost" onclick="cancelEdit()">Annulla modifica</button>` : '';
+
+/* --- 1. puntate --- */
+function betsSheet() {
+  const w = G.w, P = G.players;
+  if (!w.review) {
+    const i = w.i;
+    const dealerTaken = Object.keys(w.draft).some(k => w.draft[k] === 'M' && +k !== i);
+    const prev = w.idx > 0 ? G.hands[w.idx - 1] : null;
+    return `<div class="shead"><h3>Puntata di <b>${pn(i)}</b></h3><span class="prog">${i + 1}/${P.length}</span></div>
+      <div class="grid g3">${[10, 20, 30, 40, 50].map(v => `<button class="btn bigbtn ${w.draft[i] === v ? 'sel' : ''}" onclick="pickBet(${v})">${v}</button>`).join('')}
+        <button class="btn bigbtn dealer ${w.draft[i] === 'M' ? 'sel' : ''}" ${dealerTaken ? 'disabled' : ''} onclick="pickBet('M')">🃏 Mazziere</button></div>
+      <div class="row">
+        ${i > 0 && !w.single ? `<button class="btn sm ghost" onclick="betNav(-1)">◀ Indietro</button>` : ''}
+        ${w.single ? `<button class="btn sm ghost" onclick="toReview()">◀ Torna al riepilogo</button>` : ''}
+        ${i === 0 && !w.single && prev && prev.stage === 'done' && !Object.keys(w.draft).length ? `<button class="btn sm" onclick="copyPrevBets()">↺ Stesse puntate della mano ${w.idx}</button>` : ''}
+        ${cancelBtn()}
+      </div>`;
+  }
+  const dealers = P.map((_, i) => i).filter(i => w.draft[i] === 'M');
+  const missing = P.some((_, i) => w.draft[i] === undefined);
+  const err = missing ? 'Manca qualche puntata' : dealers.length !== 1 ? (dealers.length ? 'C’è più di un mazziere' : 'Manca il mazziere: toccane uno e scegli 🃏 Mazziere') : '';
+  return `<h3>Controlla le puntate · mano ${w.idx + 1}</h3>
+    <div class="list">${P.map((_, i) => `<button class="li" onclick="editBet(${i})"><span>${pn(i)}</span><b>${w.draft[i] === undefined ? '—' : w.draft[i] === 'M' ? '🃏 Mazziere' : w.draft[i]}</b><span class="ed">✏️</span></button>`).join('')}</div>
+    ${err ? `<div class="warn">${err}</div>` : ''}
+    <button class="btn primary big" ${err ? 'disabled' : ''} onclick="confirmBets()">✓ Conferma puntate</button>
+    <div class="row">${cancelBtn()}</div>`;
+}
+function pickBet(v) {
+  const w = G.w;
+  if (v === 'M') for (const k in w.draft) if (w.draft[k] === 'M') delete w.draft[k];
+  w.draft[w.i] = v;
+  if (w.single || w.i >= G.players.length - 1) { w.single = false; w.review = true; } else w.i++;
+  commit();
+}
+function betNav(d) { G.w.i = Math.max(0, G.w.i + d); commit(); }
+function editBet(i) { Object.assign(G.w, { i, single: true, review: false }); commit(); }
+function toReview() { Object.assign(G.w, { single: false, review: true, piste: null }); commit(); }
+function copyPrevBets() { G.w.draft = { ...G.hands[G.w.idx - 1].bets }; G.w.review = true; commit(); }
+function confirmBets() {
+  const w = G.w, h = G.hands[w.idx];
+  h.bets = { ...w.draft };
+  if (h.stage === 'done') {      // modifica di una mano già chiusa: ricontrolla gli esiti
+    const d = { ...h.res }; G.players.forEach((_, i) => { if (h.bets[i] === 'M') delete d[i]; });
+    G.w = { mode: 'res', idx: w.idx, i: 0, draft: d, review: true, ret: w.ret };
+  } else {
+    h.stage = 'play';
+    G.w = w.ret || { mode: 'wait', idx: w.idx };
+  }
+  commit();
+}
+function cancelEdit() { if (G.w.ret) { G.w = G.w.ret; commit(); } }
+
+/* --- 2. mano in gioco --- */
+function waitSheet() {
+  const w = G.w, h = G.hands[w.idx], d = dealerOf(h);
+  return `<h3>🃏 Mano ${w.idx + 1} in gioco</h3>
+    <p class="muted" style="margin:0 0 6px">Mazziere: ${pn(d)}. Quando la mano è finita inserisci i risultati.</p>
+    <button class="btn primary big" onclick="startRes()">Inserisci i risultati ▶</button>
+    <div class="row"><button class="btn sm ghost" onclick="editHandBets(${w.idx})">✏️ Modifica puntate</button></div>`;
+}
+function startRes() { G.w = { mode: 'res', idx: G.w.idx, i: 0, draft: {}, review: false }; commit(); }
+
+/* --- 3. risultati --- */
+function globBtns() {
+  return `<div class="glob"><span class="lbl">Per tutti insieme:</span>
+    <button class="btn sm" onclick="allRes('W')">✅ Vinto tutti</button>
+    <button class="btn sm" onclick="allRes('L')">❌ Perso tutti (7½)</button>
+    <button class="btn sm" onclick="allRes('L2')">Mazz. d’emblée ×2</button>
+    <button class="btn sm" onclick="allRes('L3')">Mazz. triplée ×3</button></div>`;
+}
+function resSheet() {
+  const w = G.w, h = G.hands[w.idx], nd = nonDealers(h), d = dealerOf(h);
+  if (w.piste != null) {
+    const i = w.piste, b = h.bets[i], pv = w.pv;
+    return `<h3>🛤 Piste di <b>${pn(i)}</b> <small>· puntata ${b} per pista</small></h3>
+      <div class="pst"><span>Piste vinte</span><button class="btn" onclick="pAdj('w',-1)">−</button><b>${pv.w}</b><button class="btn" onclick="pAdj('w',1)">+</button></div>
+      <div class="pst"><span>Piste perse</span><button class="btn" onclick="pAdj('l',-1)">−</button><b>${pv.l}</b><button class="btn" onclick="pAdj('l',1)">+</button></div>
+      <div class="${(pv.w - pv.l) >= 0 ? 'ok' : 'warn'}">${pv.w + pv.l} piste in totale → <b>${fmt((pv.w - pv.l) * b)}</b></div>
+      <button class="btn primary big" ${pv.w + pv.l < 1 ? 'disabled' : ''} onclick="pOk()">OK</button>
+      <div class="row"><button class="btn sm ghost" onclick="G.w.piste=null;commit()">◀ Indietro</button></div>`;
+  }
+  if (!w.review) {
+    const i = nd[w.i], b = h.bets[i], cur = w.draft[i]?.k;
+    const B = (k, txt, cls) => `<button class="btn res ${cls} ${cur === k ? 'sel' : ''}" onclick="pickRes('${k}')">${txt}<small>${fmt(rDelta(b, { k }))}</small></button>`;
+    return `${w.single ? '' : globBtns()}
+      <div class="shead"><h3>Esito di <b>${pn(i)}</b> <small>· puntata ${b}</small></h3><span class="prog">${w.i + 1}/${nd.length}</span></div>
+      <div class="grid g2">${B('L', '− Perso', 'lose')}${B('W', '+ Vinto', 'win')}${B('W2', '×2 d’emblée', 'win')}${B('W3', '×3 triplée', 'win')}</div>
+      <button class="btn res piste ${cur === 'P' ? 'sel' : ''}" onclick="openPiste(${i})">🛤 Piste (ha splittato)</button>
+      <div class="grid g2" style="margin-top:8px">${B('L2', 'Paga ×2 al mazziere', 'lose')}${B('L3', 'Paga ×3 al mazziere', 'lose')}</div>
+      <div class="row">
+        ${w.i > 0 && !w.single ? `<button class="btn sm ghost" onclick="resNav(-1)">◀ Indietro</button>` : ''}
+        ${w.single ? `<button class="btn sm ghost" onclick="toReview()">◀ Torna al riepilogo</button>` : ''}
+        ${!w.single && !w.ret ? `<button class="btn sm ghost" onclick="G.w={mode:'wait',idx:G.w.idx};commit()">✕ Annulla</button>` : ''}
+        ${cancelBtn()}
+      </div>`;
+  }
+  const vh = { bets: h.bets, res: w.draft };
+  const missing = nd.some(i => !w.draft[i]);
+  const dd = pDelta(vh, d);
+  return `<h3>Controlla i conti · mano ${w.idx + 1}</h3>
+    <div class="list">${nd.map((i, k) => {
+      const r = w.draft[i], dl = rDelta(h.bets[i], r);
+      return `<button class="li" onclick="editRes(${k})"><span>${pn(i)} <small class="muted">· ${h.bets[i]}</small></span><b class="${r ? sgn(dl) : ''}">${r ? `${rLabel(r)} → ${fmt(dl)}` : '—'}</b><span class="ed">✏️</span></button>`;
+    }).join('')}
+      <div class="li dealer"><span>${pn(d)} <small class="muted">· 🃏 mazziere</small></span><b class="${missing ? '' : sgn(dd)}">${missing ? '…' : fmt(dd)}</b></div></div>
+    ${missing ? `<div class="warn">Manca l’esito di qualche giocatore</div>` : `<div class="ok">Il mazziere ${dd >= 0 ? 'incassa' : 'paga'} ${Math.abs(dd)} · la mano fa somma zero ✓</div>`}
+    <button class="btn primary big" ${missing ? 'disabled' : ''} onclick="confirmRes()">✓ Conferma calcoli</button>
+    <div class="row"><button class="btn sm" onclick="resetResAll()">↺ Rifai tutti gli esiti</button>${cancelBtn()}</div>`;
+}
+function advanceRes() {
+  const w = G.w, nd = nonDealers(G.hands[w.idx]);
+  if (w.single || w.i >= nd.length - 1) { w.single = false; w.review = true; } else w.i++;
+}
+function pickRes(k) { const w = G.w, i = nonDealers(G.hands[w.idx])[w.i]; w.draft[i] = { k }; advanceRes(); commit(); }
+function resNav(d) { G.w.i = Math.max(0, G.w.i + d); commit(); }
+function editRes(k) { Object.assign(G.w, { i: k, single: true, review: false }); commit(); }
+function resetResAll() { Object.assign(G.w, { i: 0, single: false, review: false }); commit(); }
+function allRes(k) {
+  const w = G.w; nonDealers(G.hands[w.idx]).forEach(i => w.draft[i] = { k });
+  Object.assign(w, { single: false, review: true }); commit();
+}
+function openPiste(i) { const r = G.w.draft[i]; G.w.piste = i; G.w.pv = r && r.k === 'P' ? { w: r.w, l: r.l } : { w: 1, l: 1 }; commit(); }
+function pAdj(f, d) { G.w.pv[f] = Math.max(0, Math.min(30, G.w.pv[f] + d)); commit(); }
+function pOk() { const w = G.w; w.draft[w.piste] = { k: 'P', w: w.pv.w, l: w.pv.l }; w.piste = null; advanceRes(); commit(); }
+function confirmRes() {
+  const w = G.w, h = G.hands[w.idx];
+  h.res = { ...w.draft }; h.stage = 'done';
+  G.w = w.ret || { mode: 'after', idx: w.idx };
+  commit();
+}
+
+/* --- 4. dopo la mano --- */
+function afterSheet() {
+  const w = G.w, h = G.hands[w.idx], d = dealerOf(h), dd = pDelta(h, d);
+  return `<h3>✅ Mano ${w.idx + 1} chiusa · ${pn(d)} <span class="${sgn(dd)}">${fmt(dd)}</span></h3>
+    <div class="grid g2">
+      <button class="btn primary" style="padding:18px 8px;font-size:17px" onclick="nextHand()">▶ Continua<small>nuova mano</small></button>
+      <button class="btn" style="padding:18px 8px;font-size:17px;border-color:var(--gold)" onclick="matta()">🃏 È uscita la matta<small>si rimischia il mazzo</small></button>
+    </div>
+    <div class="row"><button class="btn sm ghost" onclick="handMenu(${w.idx})">✏️ Modifica questa mano</button></div>`;
+}
+function nextHand() {
+  G.hands.push({ bets: {}, res: {}, stage: 'bets' });
+  G.w = { mode: 'bets', idx: G.hands.length - 1, i: 0, draft: {}, review: false };
+  commit();
+}
+function matta() { G.w = { mode: 'sign', idx: G.w.idx }; commit(); }
+
+/* --- 5. matta + firma --- */
+function signSheet() {
+  const h = G.hands[G.w.idx], d = dealerOf(h);
+  return `<h3>🃏 È uscita la matta!</h3>
+    <p class="muted" style="margin:0">Si tira la riga: firma per confermare che i conti di questo mazzo sono giusti.</p>
+    <div class="signrow"><span class="muted">Firma:</span><select id="signer">${G.players.map((_, i) => `<option value="${i}" ${i === d ? 'selected' : ''}>${pn(i)}</option>`).join('')}</select></div>
+    <canvas id="sig"></canvas>
+    <div class="row"><button class="btn sm" onclick="initSig(true)">Cancella firma</button><button class="btn sm ghost" onclick="G.w={mode:'after',idx:G.w.idx};commit()">◀ Indietro</button></div>
+    <button class="btn primary big" onclick="doSign()">✍️ Firma e nuovo mazzo</button>`;
+}
+let sigInk = false;
+function initSig() {
+  const c = $('#sig'); if (!c) return;
+  const dpr = window.devicePixelRatio || 1, r = c.getBoundingClientRect();
+  c.width = r.width * dpr; c.height = r.height * dpr;
+  const x = c.getContext('2d'); x.scale(dpr, dpr); x.lineWidth = 2.6; x.lineCap = 'round'; x.lineJoin = 'round'; x.strokeStyle = '#f4f1ea';
+  sigInk = false; let drawing = false;
+  const pt = e => { const b = c.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; };
+  c.onpointerdown = e => { drawing = true; c.setPointerCapture(e.pointerId); const [a, b] = pt(e); x.beginPath(); x.moveTo(a, b); x.lineTo(a + .1, b + .1); x.stroke(); sigInk = true; };
+  c.onpointermove = e => { if (!drawing) return; const [a, b] = pt(e); x.lineTo(a, b); x.stroke(); };
+  c.onpointerup = c.onpointercancel = () => drawing = false;
+}
+function doSign() {
+  if (!sigInk) return toast('Firma col dito nel riquadro');
+  const c = $('#sig'), out = document.createElement('canvas');
+  out.width = 300; out.height = Math.round(300 * c.height / c.width);
+  out.getContext('2d').drawImage(c, 0, 0, out.width, out.height);
+  const si = +$('#signer').value;
+  G.cuts[G.w.idx] = { signer: G.players[si].name, sig: out.toDataURL('image/png'), t: Date.now() };
+  nextHand();
+  toast('Mazzo firmato ✍️ Si rimischia!');
+}
+
+/* --- modifica mani passate --- */
+function handMenu(idx) {
+  const h = G.hands[idx], w = G.w;
+  if (w.ret) return toast('Finisci prima la modifica in corso');
+  if (w.idx === idx && ['bets', 'res', 'sign'].includes(w.mode)) return;
+  const isLast = idx === G.hands.length - 1;
+  modal(`<h3>Mano ${idx + 1}</h3>
+    ${h.stage !== 'bets' ? `<button class="btn" onclick="closeModal();editHandBets(${idx})">✏️ Modifica puntate</button>` : ''}
+    ${h.stage === 'done' ? `<button class="btn" onclick="closeModal();editHandRes(${idx})">✏️ Modifica risultati</button>` : ''}
+    ${isLast && h.stage !== 'bets' ? `<button class="btn red" onclick="closeModal();resetHand(${idx})">🗑 Cancella questa mano e rifalla</button>` : ''}
+    <button class="btn ghost" onclick="closeModal()">Chiudi</button>`);
+}
+function editHandBets(idx) {
+  const h = G.hands[idx], ret = G.w.mode === 'wait' && G.w.idx === idx ? null : { ...G.w };
+  G.w = { mode: 'bets', idx, i: 0, draft: { ...h.bets }, review: true, ret };
+  commit();
+}
+function editHandRes(idx) {
+  G.w = { mode: 'res', idx, i: 0, draft: { ...G.hands[idx].res }, review: true, ret: { ...G.w } };
+  commit();
+}
+function resetHand(idx) {
+  confirmModal(`Cancellare la mano ${idx + 1}?`, 'Puntate e risultati di questa mano vengono cancellati e la rifai da capo.', 'Cancella', () => {
+    G.hands[idx] = { bets: {}, res: {}, stage: 'bets' }; delete G.cuts[idx];
+    G.w = { mode: 'bets', idx, i: 0, draft: {}, review: false }; commit();
+  });
+}
+
+/* ===== FINE SESSIONE ===== */
+function askEnd() {
+  const done = G.hands.filter(h => h.stage === 'done').length;
+  const inc = G.hands.some(h => h.stage !== 'done' && (h.stage !== 'bets' || Object.keys(G.w.draft || {}).length));
+  if (!done) {
+    confirmModal('FINE SESSIONE?', 'Non c’è ancora nessuna mano finita: la partita viene chiusa senza salvare niente.', 'Chiudi la partita', () => { G = null; LS.del('sem_game'); goHome(); });
+    return;
+  }
+  confirmModal('FINE SESSIONE?', `${done} ${done === 1 ? 'mano giocata' : 'mani giocate'}. ${inc ? 'La mano in corso non è finita e <b>non verrà contata</b>. ' : ''}${G.type === 'fism' ? 'I totali verranno <b>aggiunti alla classifica FISM</b>.' : 'Partita a cazz de cane: i totali <b>non</b> verranno salvati.'}`, 'Sì, fine sessione', endSession);
+}
+function endSession() {
+  const tot = totals(), done = G.hands.filter(h => h.stage === 'done').length;
+  G.ended = true; G.endedAt = Date.now(); G.final = tot; G.mani = done;
+  if (G.type === 'fism' && !G.queued) {
+    const deltas = {}, nuovi = {};
+    G.players.forEach((p, i) => { deltas[p.id] = tot[i]; if (p.isNew) nuovi[p.id] = { name: p.name, emoji: p.emoji, base: 0, order: 999 }; });
+    const pend = LS.get('sem_pending', []);
+    pend.push({ id: G.id, date: new Date().toISOString(), type: 'fism', mani: done, deltas, nuovi, giocatori: G.players.map(p => p.name) });
+    LS.set('sem_pending', pend); G.queued = true;
+  }
+  S.view = 'summary'; commit();
+  flushPending().then(render);
+}
+function summaryHTML() {
+  const tot = G.final, sum = tot.reduce((a, b) => a + b, 0);
+  const order = G.players.map((p, i) => ({ p, t: tot[i] })).sort((a, b) => b.t - a.t);
+  const pending = LS.get('sem_pending', []).some(x => x.id === G.id);
+  const rk = {}; ranking().forEach(r => rk[r.id] = r.score);
+  return `<header class="top"><div class="logo">7½</div><div class="title">🏁 Sessione finita</div></header>
+  <div class="scroll"><div class="home">
+    <p class="muted">${G.type === 'fism' ? '🏆 Partita Ufficiale FISM' : '🤙 A cazz de cane'} · ${G.mani} ${G.mani === 1 ? 'mano' : 'mani'} · ${Object.keys(G.cuts).length} ${Object.keys(G.cuts).length === 1 ? 'mazzo firmato' : 'mazzi firmati'}</p>
+    <ol class="rank">${order.map((o, i) => `<li><span class="pos">${i + 1}</span><span class="em">${esc(o.p.emoji)}</span><span class="nm">${esc(o.p.name)}${G.type === 'fism' ? `<span class="sub">classifica ${fmt(rk[o.p.id] ?? 0)}</span>` : ''}</span><span class="sc ${sgn(o.t)}">${fmt(o.t)}</span></li>`).join('')}</ol>
+    <div class="${sum === 0 ? 'ok' : 'warn'}">Somma di tutti: ${sum} ${sum === 0 ? '· i conti tornano ✓' : '⚠️'}</div>
+    ${G.type === 'fism'
+      ? (pending ? `<div class="warn">⏳ Non ancora salvata in classifica (manca la connessione?). Resta in memoria e riprovo in automatico.</div><button class="btn" onclick="flushPending().then(render)">Riprova ora</button>`
+                 : `<div class="ok">✅ Salvata nella classifica FISM${SYNC === 'local' ? ' (su questo telefono)' : ''}</div>`)
+      : `<div class="muted">Partita a cazz de cane: non è stato salvato niente.</div>`}
+    <button class="btn primary big" onclick="finishAll()">🏠 Torna all’inizio</button>
+  </div></div>`;
+}
+function finishAll() { G = null; LS.del('sem_game'); S.view = 'home'; render(); }
+
+/* ---------- schermo sempre acceso durante la partita ---------- */
+let wl = null;
+async function wake() { try { if ('wakeLock' in navigator && !wl) { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => wl = null); } } catch (e) {} }
+
+window.addEventListener('online', () => flushPending().then(render));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { wl = null; if (S.view === 'game') wake(); if (S.view === 'home') loadReg(); } });
+
+render();
+loadReg();
+</script>
+</body>
+</html>
