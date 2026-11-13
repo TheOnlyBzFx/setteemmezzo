@@ -246,6 +246,9 @@ table.gt tr.dl td{color:var(--gold)}
 .seg2{display:flex;border:1px solid #555;border-radius:10px;overflow:hidden;margin-bottom:10px}
 .seg2 button{flex:1;background:#262626;color:var(--chalk);border:none;padding:9px 6px;font:600 13px Inter,sans-serif;cursor:pointer}
 .seg2 button.on{background:var(--gold);color:#141414}
+.grafwrap{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+.grafchart{flex:2 1 320px;min-width:0}
+.grafgas{flex:1 1 240px;min-width:220px}
 .lgd{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 14px}
 .lgd button{display:flex;align-items:center;gap:6px;background:#262626;border:1px solid #3d3d3d;border-radius:20px;padding:5px 10px 5px 7px;color:var(--chalk);font:13px Inter,sans-serif;cursor:pointer}
 .lgd button.off{opacity:.45}
@@ -1250,7 +1253,6 @@ function histHTML() {
   const list = allSessions(), g = allPlayers();
   return `<header class="top"><button class="btn sm ghost" onclick="goHome()">←</button><div class="title">📜 Storico partite <small>🏆 FISM</small></div></header>
   <div class="scroll"><div class="home">
-    <button class="btn primary big" style="margin:0 0 14px" onclick="openGraf()">📈 Grafico e gasometro</button>
     ${list.length ? `<p class="muted" style="margin-top:0">Tocca una partita per vederla e modificarla.</p>` : `<p class="muted">Non c’è ancora nessuna partita salvata.</p>`}
     ${list.map(r => `<button class="hcard" onclick="openHist('${esc(r.id)}')">
       <div class="hd"><span>${esc(sessLabel(r))}</span><small>${esc(dstr(r.date))}${r.modificata ? ' · ✏️' : ''}</small></div>
@@ -1279,6 +1281,7 @@ function histSheet() {
   return `<h3>✏️ Partita del ${esc(dstr(G.orig.date))}</h3>
     <p class="muted" style="margin:0 0 8px">Tocca una casella della tabella (o il numero della mano) per correggere puntata o risultato, poi premi Salva.</p>
     ${dirty ? `<div class="warn">Ci sono modifiche non ancora salvate</div>` : ''}
+    <button class="btn big" style="margin-top:0" onclick="openGraf('${esc(G.editOf)}','game')">📈 Mostra grafico</button>
     <button class="btn primary big" onclick="saveHist()">💾 Salva modifiche</button>
     <div class="row"><button class="btn sm" onclick="exitHist()">◀ Torna allo storico</button><button class="btn sm red" onclick="delHist('${esc(G.editOf)}')">🗑 Elimina partita</button></div>`;
 }
@@ -1333,6 +1336,7 @@ function histNumHTML() {
   const H = S.hn, g = allPlayers();
   return `<header class="top"><button class="btn sm ghost" onclick="openHistList()">←</button><div class="title">✏️ ${esc(sessLabel(H.r))}<small>${esc(dstr(H.r.date))}</small></div></header>
   <div class="scroll"><div class="load">
+    <button class="btn big" style="margin:0 0 12px" onclick="openGraf('${esc(H.r.id)}','histNum')">📈 Mostra grafico</button>
     <p class="muted" style="margin-top:0">Questa partita non ha la tabella: puoi correggere direttamente i risultati.</p>
     ${Object.keys(H.v).map(id => `<div class="lrow"><span class="em">${esc(g[id]?.emoji || '🃏')}</span><span class="nm">${esc(g[id]?.name || id)}</span>
       <button class="btn sg ${H.neg[id] ? 'm' : 'p'}" onclick="hnSign('${esc(id)}',this)">${H.neg[id] ? '−' : '+'}</button>
@@ -1369,7 +1373,7 @@ function gasLevel(g) {
   if (g < 600) return ['🔥 Gasata', '#d95926'];
   return ['🚀 Gasatissima', '#e0442f'];
 }
-function gasMax() { return Math.max(800, ...allSessions().filter(isGame).map(gasOf)); }
+function gasMax() { return 1000; }   // scala fissa: oltre 1000 la lancetta resta a fondo scala
 function miniGas(r) {
   const g = gasOf(r), [lab, col] = gasLevel(g), pct = Math.min(100, g / gasMax() * 100);
   return `<div class="mgas">⛽<span class="bar"><i style="width:${pct}%;background:${col}"></i></span><span>${lab} · ${g}</span></div>`;
@@ -1386,7 +1390,7 @@ function gaugeSVG(g) {
       <line x1="${cx}" y1="${cy}" x2="${cx - R + 22}" y2="${cy}" stroke="#f4f1ea" stroke-width="4" stroke-linecap="round"/></g>
     <circle cx="${cx}" cy="${cy}" r="9" fill="#f4f1ea"/>
     <text x="${cx - R}" y="${cy + 18}" fill="#9a968e" font-size="12" text-anchor="middle">0</text>
-    <text x="${cx + R}" y="${cy + 18}" fill="#9a968e" font-size="12" text-anchor="middle">${max}</text>
+    <text x="${cx + R}" y="${cy + 18}" fill="#9a968e" font-size="12" text-anchor="middle">${max}+</text>
   </svg><div class="gl" style="color:${col}">${lab}</div><div class="gs">⛽ ${g} punti tra chi ha vinto di più e chi ha perso di più</div>`;
 }
 function animGauge() { document.querySelectorAll('.needle').forEach(n => requestAnimationFrame(() => n.style.transform = `rotate(${n.dataset.a}deg)`)); }
@@ -1439,71 +1443,77 @@ function savePay() {
   S.pay = null; render(); toast('Pagamento registrato ✓');
 }
 
-// --- grafico dell'andamento ---
-function openGraf() { S.view = 'graf'; S.gmode = S.gmode || 'zero'; render(); }
-function grafData() {
-  const g = allPlayers(), list = allSessions().slice().reverse();   // dalla più vecchia
-  const tot = S.gmode === 'tot';
-  const labels = ['Inizio'];
-  const cur = {}; Object.keys(g).forEach(id => cur[id] = 0);
-  const pts = {}; Object.keys(g).forEach(id => pts[id] = [0]);
-  if (tot) { labels.push('Partenza'); Object.keys(g).forEach(id => { cur[id] = +g[id].base || 0; pts[id].push(cur[id]); }); }
-  list.forEach(r => {
-    labels.push(new Date(r.date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }));
-    Object.entries(r.deltas || {}).forEach(([id, v]) => { if (cur[id] == null) { cur[id] = 0; pts[id] = Array(labels.length - 1).fill(0); } cur[id] += +v || 0; });
-    Object.keys(cur).forEach(id => pts[id].push(cur[id]));
-  });
-  const ids = Object.keys(pts).filter(id => pts[id].some(v => v !== 0));
-  return { g, labels, pts, ids };
-}
-function niceStep(range) { const raw = range / 4, p = Math.pow(10, Math.floor(Math.log10(raw || 1))), n = raw / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; }
-function grafHTML() {
-  const { g, labels, pts, ids } = grafData();
-  const order = Object.keys(g).sort((a, b) => (g[a].order ?? 999) - (g[b].order ?? 999));
-  const fin = id => pts[id][pts[id].length - 1];
-  // evidenziati: scelti dall'utente, altrimenti i primi 4 e gli ultimi 4
-  if (!S.gsel || !S.gsel.length) { const s = ids.slice().sort((a, b) => fin(b) - fin(a)); S.gsel = [...new Set([...s.slice(0, 4), ...s.slice(-4)])]; }
-  const sel = order.filter(id => S.gsel.includes(id) && ids.includes(id)).slice(0, 8);
-  const color = {}; sel.forEach((id, k) => color[id] = SERIES[k]);
-  const games = allSessions().filter(isGame);
-  const gsel = S.gsess && games.find(r => r.id === S.gsess) || games[0];
-  const W = Math.round(Math.min(700, Math.max(300, (window.innerWidth || 390) - 40))), H = Math.round(W * .62), L = 44, Rm = 32, T = 12, B = 26, N = labels.length - 1;
-  let svg = '';
-  if (N >= 1 && ids.length) {
-    const all = ids.flatMap(id => pts[id]); let lo = Math.min(0, ...all), hi = Math.max(0, ...all);
-    const st = niceStep(hi - lo || 100); lo = Math.floor(lo / st) * st; hi = Math.ceil(hi / st) * st; if (hi === lo) hi = lo + st;
-    const X = i => L + (W - L - Rm) * i / N, Y = v => T + (H - T - B) * (hi - v) / (hi - lo);
-    let grid = '';
-    for (let v = lo; v <= hi + 1e-9; v += st) grid += `<line x1="${L}" x2="${W - Rm}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v === 0 ? '#8a8780' : '#2e2e2c'}" stroke-width="${v === 0 ? 1.5 : 1}"/><text x="${L - 6}" y="${Y(v) + 4}" fill="#9a968e" font-size="11" text-anchor="end">${v > 0 ? '+' : ''}${v}</text>`;
-    const every = Math.max(1, Math.ceil(N / 6));
-    labels.forEach((lb, i) => { if (i % every === 0 || i === N) grid += `<text x="${X(i)}" y="${H - 9}" fill="#9a968e" font-size="11" text-anchor="middle">${esc(lb)}</text>`; });
-    const path = arr => arr.map((v, i) => i === 0 ? `M${X(0)} ${Y(v)}` : `C${(X(i - 1) + X(i)) / 2} ${Y(arr[i - 1])} ${(X(i - 1) + X(i)) / 2} ${Y(v)} ${X(i)} ${Y(v)}`).join(' ');
-    const grey = ids.filter(id => !color[id]).map(id => `<path class="ln" d="${path(pts[id])}" stroke="#4a4a47" stroke-width="1.5" fill="none" stroke-linecap="round"/>`).join('');
-    const col = sel.map(id => `<path class="ln" d="${path(pts[id])}" stroke="${color[id]}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`).join('');
-    const ends = sel.map(id => `<g class="end"><circle cx="${X(N)}" cy="${Y(fin(id))}" r="5" fill="${color[id]}" stroke="#1a1a19" stroke-width="2"/><text x="${X(N) + 9}" y="${Y(fin(id)) + 5}" font-size="14">${esc(g[id]?.emoji || '')}</text></g>`).join('');
-    svg = `<svg id="gsvg" viewBox="0 0 ${W} ${H}" data-n="${N}" data-l="${L}" data-w="${W - L - Rm}" role="img" aria-label="Andamento dei punteggi">${grid}${grey}${col}${ends}<line id="gcross" y1="${T}" y2="${H - B}" stroke="#f4f1ea" stroke-width="1" opacity="0"/></svg>`;
-    S.gdata = { labels, pts, sel, color, g };
+// --- grafico della singola partita ---
+function openGraf(id, back) { S.gid = id; S.gback = back; S.view = 'graf'; render(); }
+function grafBack() { S.view = S.gback || 'hist'; render(); }
+function gameSeries(id) {
+  const g = allPlayers();
+  // partita aperta in modifica: uso i dati attuali (anche non salvati)
+  let players, hands, cuts = {}, r = allSessions().find(x => x.id === id);
+  if (G && G.editOf === id) { players = G.players; hands = G.hands.filter(h => h.stage === 'done'); cuts = G.cuts || {}; r = { ...r, deltas: Object.fromEntries(G.players.map((p, i) => [p.id, totals()[i]])) }; }
+  else if (r && r.tabella && r.tabella.hands) { players = r.tabella.players || []; hands = r.tabella.hands.map(h => ({ bets: norm(h.bets), res: norm(h.res) })); cuts = norm(r.tabella.cuts); }
+  if (!r) return null;
+  if (players && hands) {
+    const hd = (h, i) => {
+      if (h.bets[i] === 'M') { let s = 0; players.forEach((_, j) => { if (j !== i && h.bets[j] !== 'M') s += rDelta(h.bets[j], h.res[j]); }); return -s; }
+      return rDelta(h.bets[i], h.res[i]);
+    };
+    const pts = {}, labels = ['Inizio', ...hands.map((_, k) => String(k + 1))];
+    players.forEach((p, i) => { let c = 0; pts[p.id] = [0, ...hands.map(h => (c += hd(h, i)))]; });
+    const cutsAt = Object.keys(cuts).map(Number).filter(k => k < hands.length).map(k => k + 1);
+    return { r, ids: players.map(p => p.id), pts, labels, cutsAt, names: Object.fromEntries(players.map(p => [p.id, p])), xname: 'mano' };
   }
-  return `<header class="top"><button class="btn sm ghost" onclick="openHistList()">←</button><div class="title">📈 Grafico <small>🏆 FISM</small></div></header>
-  <div class="scroll"><div class="home">
-    <div class="seg2"><button class="${S.gmode !== 'tot' ? 'on' : ''}" onclick="S.gmode='zero';render()">Tutti da zero</button><button class="${S.gmode === 'tot' ? 'on' : ''}" onclick="S.gmode='tot';render()">Con i punti di partenza</button></div>
-    ${svg ? `<div class="chartbox">${svg}<div class="tip" id="gtip"></div></div>
-      <div class="row" style="justify-content:space-between;margin:0"><span class="muted" style="font-size:12px">Tocca i nomi per scegliere chi colorare (max 8) · tocca il grafico per i valori</span><button class="btn sm" onclick="render()">▶ Rivedi</button></div>
-      <div class="lgd">${order.filter(id => ids.includes(id)).map(id => `<button class="${color[id] ? '' : 'off'}" onclick="toggleG('${esc(id)}')"><i style="background:${color[id] || '#4a4a47'}"></i>${esc(g[id]?.emoji || '')} ${esc(g[id]?.name || id)} <b>${fmt(fin(id))}</b></button>`).join('')}</div>`
-      : `<div class="ok">Il grafico comparirà dopo la prima partita salvata.</div>`}
-    <h3 style="margin:18px 0 8px">⛽ Gasometro di partita</h3>
-    ${gsel ? `<select style="width:100%;margin-bottom:8px" onchange="S.gsess=this.value;render()">${games.map(r => `<option value="${esc(r.id)}" ${r.id === gsel.id ? 'selected' : ''}>${esc(dstr(r.date))} · ${esc(sessLabel(r))}</option>`).join('')}</select>
-      <div class="gasbox">${gaugeSVG(gasOf(gsel))}</div>
-      <p class="muted" style="font-size:13px">Più è grande la differenza tra chi ha vinto di più e chi ha perso di più, più la partita ha gasato. Record: <b>${Math.max(...games.map(gasOf))}</b></p>`
-      : `<p class="muted">Nessuna partita ancora.</p>`}
+  // senza tabella: solo inizio → fine
+  const ids = Object.keys(r.deltas || {}), pts = {};
+  ids.forEach(id2 => pts[id2] = [0, +r.deltas[id2] || 0]);
+  return { r, ids, pts, labels: ['Inizio', 'Fine'], cutsAt: [], names: Object.fromEntries(ids.map(x => [x, g[x] || { name: x, emoji: '🃏' }])), xname: '' };
+}
+function grafHTML() {
+  const D = gameSeries(S.gid);
+  if (!D) return `<header class="top"><button class="btn sm ghost" onclick="grafBack()">←</button><div class="title">📈 Grafico</div></header><div class="scroll"><div class="home"><p class="muted">Partita non trovata.</p></div></div>`;
+  const { r, ids, pts, labels, cutsAt, names } = D;
+  const fin = id => pts[id][pts[id].length - 1];
+  const color = {}; ids.forEach((id, k) => color[id] = SERIES[k % SERIES.length]);
+  const sel = S.gsel && S.gsel.filter(x => ids.includes(x)).length ? S.gsel.filter(x => ids.includes(x)) : ids;
+  const cw = Math.min(700, Math.max(300, ((window.innerWidth || 390) >= 900 ? (window.innerWidth - 40) * .62 : (window.innerWidth || 390) - 40)));
+  const W = Math.round(cw), H = Math.round(W * .62), L = 44, Rm = 32, T = 12, B = 26, N = labels.length - 1;
+  const all = ids.flatMap(id => pts[id]); let lo = Math.min(0, ...all), hi = Math.max(0, ...all);
+  const st = niceStep(hi - lo || 100); lo = Math.floor(lo / st) * st; hi = Math.ceil(hi / st) * st; if (hi === lo) hi = lo + st;
+  const X = i => L + (W - L - Rm) * i / N, Y = v => T + (H - T - B) * (hi - v) / (hi - lo);
+  let grid = '';
+  for (let v = lo; v <= hi + 1e-9; v += st) grid += `<line x1="${L}" x2="${W - Rm}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v === 0 ? '#8a8780' : '#2e2e2c'}" stroke-width="${v === 0 ? 1.5 : 1}"/><text x="${L - 6}" y="${Y(v) + 4}" fill="#9a968e" font-size="11" text-anchor="end">${v > 0 ? '+' : ''}${v}</text>`;
+  cutsAt.forEach(k => grid += `<line x1="${X(k)}" x2="${X(k)}" y1="${T}" y2="${H - B}" stroke="#f4f1ea" stroke-width="1" stroke-dasharray="3 4" opacity=".35"/><text x="${X(k)}" y="${T + 10}" fill="#9a968e" font-size="10" text-anchor="middle">🃏</text>`);
+  const every = Math.max(1, Math.ceil(N / 8));
+  labels.forEach((lb, i) => { if (i % every === 0 || i === N) grid += `<text x="${X(i)}" y="${H - 9}" fill="#9a968e" font-size="11" text-anchor="middle">${esc(lb)}</text>`; });
+  const path = arr => arr.map((v, i) => i === 0 ? `M${X(0)} ${Y(v)}` : `C${(X(i - 1) + X(i)) / 2} ${Y(arr[i - 1])} ${(X(i - 1) + X(i)) / 2} ${Y(v)} ${X(i)} ${Y(v)}`).join(' ');
+  const lines = ids.map(id => sel.includes(id)
+    ? `<path class="ln" d="${path(pts[id])}" stroke="${color[id]}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`
+    : `<path class="ln" d="${path(pts[id])}" stroke="#4a4a47" stroke-width="1.5" fill="none" stroke-linecap="round"/>`).join('');
+  const ends = ids.filter(id => sel.includes(id)).map(id => `<g class="end"><circle cx="${X(N)}" cy="${Y(fin(id))}" r="5" fill="${color[id]}" stroke="#1a1a19" stroke-width="2"/><text x="${X(N) + 9}" y="${Y(fin(id)) + 5}" font-size="14">${esc(names[id]?.emoji || '')}</text></g>`).join('');
+  const svg = `<svg id="gsvg" viewBox="0 0 ${W} ${H}" data-n="${N}" data-l="${L}" data-w="${W - L - Rm}" role="img" aria-label="Andamento della partita">${grid}${lines}${ends}<line id="gcross" y1="${T}" y2="${H - B}" stroke="#f4f1ea" stroke-width="1" opacity="0"/></svg>`;
+  S.gdata = { labels: labels.map((l, i) => i === 0 ? 'Inizio' : D.xname ? `Mano ${l}` : l), pts, sel: ids.filter(id => sel.includes(id)), color, g: names };
+  return `<header class="top"><button class="btn sm ghost" onclick="grafBack()">←</button><div class="title">📈 ${esc(sessLabel(r))}<small>${esc(dstr(r.date))}</small></div></header>
+  <div class="scroll"><div class="home" style="max-width:1100px">
+    <div class="grafwrap">
+      <div class="grafchart">
+        <div class="chartbox">${svg}<div class="tip" id="gtip"></div></div>
+        <div class="row" style="justify-content:space-between;margin:0"><span class="muted" style="font-size:12px">Tocca il grafico per i punteggi · tocca un nome per metterlo in evidenza${cutsAt.length ? ' · 🃏 = matta' : ''}</span><button class="btn sm" onclick="render()">▶ Rivedi</button></div>
+        <div class="lgd">${ids.slice().sort((a, b) => fin(b) - fin(a)).map(id => `<button class="${sel.includes(id) ? '' : 'off'}" onclick="toggleG('${esc(id)}')"><i style="background:${color[id]}"></i>${esc(names[id]?.emoji || '')} ${esc(names[id]?.name || id)} <b>${fmt(fin(id))}</b></button>`).join('')}</div>
+      </div>
+      <div class="grafgas"><h3 style="margin:0 0 6px">⛽ Gasometro</h3><div class="gasbox" style="margin-top:0">${gaugeSVG(gasOf(r))}</div></div>
+    </div>
   </div></div>`;
 }
 function toggleG(id) {
-  const s = S.gsel || [];
-  if (s.includes(id)) S.gsel = s.filter(x => x !== id);
-  else { if (s.length >= 8) return toast('Massimo 8 colorati: togline uno'); S.gsel = [...s, id]; }
+  const ids = gameSeries(S.gid)?.ids || [];
+  let s = S.gsel && S.gsel.filter(x => ids.includes(x)).length ? S.gsel.filter(x => ids.includes(x)) : ids.slice();
+  if (s.length === ids.length) s = [id];                 // primo tocco: evidenzia solo lui
+  else if (s.includes(id)) s = s.filter(x => x !== id);
+  else s = [...s, id];
+  S.gsel = s.length ? s : ids.slice();
   render();
 }
+function niceStep(range) { const raw = range / 4, p = Math.pow(10, Math.floor(Math.log10(raw || 1))), n = raw / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; }
 function afterGraf() {
   animGauge();
   const svg = $('#gsvg'); if (!svg) return;
