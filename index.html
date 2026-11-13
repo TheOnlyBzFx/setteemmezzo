@@ -94,6 +94,44 @@ tr.cut td{padding:0;height:auto;border-left:none}
 .sheet h3 b{font-weight:800}
 .sheet h3 small{color:var(--muted);font-size:14px}
 .shead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.who{display:flex;align-items:center;gap:10px;border-radius:14px;padding:10px 12px;margin-bottom:10px;color:#141414;background:var(--gold);box-shadow:0 0 0 3px rgba(232,184,74,.25)}
+.who.res{background:#7fd9ff;box-shadow:0 0 0 3px rgba(127,217,255,.25)}
+.who .wl{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.75;line-height:1.1}
+.who .we{font-size:32px;line-height:1}
+.who .wn{font-size:25px;font-weight:800;line-height:1.1}
+.who .wx{margin-left:auto;text-align:right;font-size:13px;font-weight:600;opacity:.8;white-space:nowrap}
+.who .wx b{display:block;font-family:'Patrick Hand',cursive;font-size:26px;font-weight:400;opacity:1}
+.sh th.cur{background:var(--gold);color:#141414}
+.sh th.cur.hl-res,.sh td.cur.hl-res{--hl:#7fd9ff}
+.sh th.cur.hl-res{background:#7fd9ff}
+td.cur{background:rgba(232,184,74,.22)!important;box-shadow:inset 0 0 0 3px var(--hl,var(--gold));animation:pulse 1.2s ease-in-out infinite}
+td.cur.hl-res{background:rgba(127,217,255,.18)!important}
+@keyframes pulse{50%{box-shadow:inset 0 0 0 1px var(--hl,var(--gold))}}
+.sh tbody td:not(.n){cursor:pointer}
+.sh.compact th{min-width:0;padding:5px 2px 3px}
+.sh.compact th .pn{font-size:15px;max-width:62px}
+.sh.compact th .pe{font-size:15px}
+.sh.compact td{padding:2px 3px;height:40px}
+.sh.compact .bet{font-size:21px}
+.sh.compact .r{font-size:13px;top:-7px}
+.sh.compact .run{font-size:13px}
+.sh.compact .cell{flex-direction:column;align-items:flex-start;gap:0}
+.sh.compact .cell .run{align-self:flex-end;line-height:1}
+.sh.compact tfoot td{font-size:18px}
+.sh.compact .n{width:22px;min-width:22px;font-size:13px}
+.tap-hint{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
+.btnrow2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.btn.wa{background:#25d366;border-color:#25d366;color:#0b2e17}
+.load{padding:14px 14px 120px;max-width:560px;margin:0 auto}
+.lrow{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #2c2c2c}
+.lrow .em{width:28px;text-align:center;font-size:20px}
+.lrow .nm{flex:1;font-size:16px}
+.lrow .sg{width:44px;height:44px;padding:0;font-size:22px;border-radius:12px}
+.lrow .sg.p{color:var(--green);border-color:#2f6b4c}
+.lrow .sg.m{color:var(--red);border-color:#7a2e24}
+.lrow input{width:96px;text-align:right;font-family:'Patrick Hand',cursive;font-size:22px;padding:8px 10px}
+.loadbar{position:sticky;bottom:0;background:var(--panel);border-top:1px solid #444;padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px}
+.loadbar .sum{flex:1;font-size:15px}
 .prog{color:var(--muted);font-size:13px;padding-top:3px}
 .grid{display:grid;gap:8px}
 .g3{grid-template-columns:repeat(3,1fr)}
@@ -291,6 +329,8 @@ function render() {
   else if (S.view === 'setup') a.innerHTML = setupHTML();
   else if (S.view === 'game' && G) { a.innerHTML = gameHTML(); afterGameRender(); }
   else if (S.view === 'summary' && G) a.innerHTML = summaryHTML();
+  else if (S.view === 'load') { a.innerHTML = loadHTML(); updLoadSum(); }
+  else if (S.view === 'loaded') a.innerHTML = loadedHTML();
   else { S.view = 'home'; a.innerHTML = homeHTML(); }
 }
 function goHome() { S.view = 'home'; render(); }
@@ -306,7 +346,9 @@ function homeHTML() {
     ${G && !G.ended ? `<button class="btn resume" onclick="resume()">▶ Riprendi la partita in corso
       <small>${G.type === 'fism' ? '🏆 Ufficiale FISM' : '🤙 A cazz de cane'} · ${G.players.length} giocatori · mano ${G.hands.length}</small></button>` : ''}
     <button class="btn primary big" onclick="askType()">🃏 Nuova partita</button>
+    <button class="btn big" onclick="startLoad()">📝 Carica risultati<small>conti già fatti sul foglio → classifica FISM</small></button>
     <div class="rankhead"><h2>🏆 Classifica FISM</h2><span class="sync">${syncTxt}${pend ? ` · ${pend} sessione da inviare` : ''}</span></div>
+    <button class="btn sm wa" onclick="shareRanking()">📲 Condividi la classifica su WhatsApp</button>
     <ol class="rank">${r.map((p, i) => `<li><span class="pos">${i + 1}</span><span class="em">${esc(p.emoji)}</span><span class="nm">${esc(p.name)}</span><span class="sc ${sgn(p.score)}">${fmt(p.score)}</span></li>`).join('')}</ol>
   </div></div>`;
 }
@@ -389,14 +431,15 @@ function viewHand(idx) {
 }
 function tableHTML() {
   const P = G.players, run = P.map(() => 0);
-  let body = '';
+  let body = '', hlCol = -1;
   G.hands.forEach((h, idx) => {
     const vh = viewHand(idx), editing = G.w.idx === idx && (G.w.mode === 'bets' || G.w.mode === 'res');
     if (h.stage === 'done') P.forEach((_, i) => run[i] += pDelta(h, i));
     const showRun = h.stage === 'done' && !editing;
     const curCol = editing && !G.w.review && G.w.piste == null ? (G.w.mode === 'bets' ? G.w.i : nonDealers(h)[G.w.i]) : -1;
     const resComplete = nonDealers(vh).every(i => vh.res[i]);
-    body += `<tr class="${editing ? 'draft' : ''}"><td class="n" onclick="handMenu(${idx})">${idx + 1}</td>` + P.map((_, i) => {
+    if (curCol >= 0) hlCol = curCol;
+    body += `<tr class="${editing ? 'draft' : ''}" data-h="${idx}"><td class="n" onclick="handMenu(${idx})">${idx + 1}</td>` + P.map((_, i) => {
       const b = vh.bets[i];
       let left, sup = '';
       if (b === undefined) left = `<span class="bet empty">·</span>`;
@@ -408,19 +451,25 @@ function tableHTML() {
         if (vh.res[i] && vh.stage !== 'draft') sup = `<span class="r">${rLabel(vh.res[i])}</span>`;
       }
       const rv = showRun ? `<span class="run ${run[i] > 0 ? 'p' : run[i] < 0 ? 'q' : ''}">${fmt(run[i])}</span>` : '';
-      return `<td class="${i === curCol ? 'cur' : ''}"><div class="cell"><span>${left}${sup}</span>${rv}</div></td>`;
+      return `<td class="${i === curCol ? 'cur hl-' + G.w.mode : ''}" onclick="cellTap(${idx},${i})"><div class="cell"><span>${left}${sup}</span>${rv}</div></td>`;
     }).join('') + '</tr>';
     const c = G.cuts[idx];
     if (c) body += `<tr class="cut"><td colspan="${P.length + 1}"><div class="cutbox"><span>🃏 È uscita la matta · firmato da <b>${esc(c.signer)}</b></span>${c.sig ? `<img src="${c.sig}" alt="firma">` : ''}</div></td></tr>`;
   });
   const tot = totals();
-  return `<table class="sh"><thead><tr><th class="n">#</th>${P.map(p => `<th><div class="pe">${esc(p.emoji)}</div><div class="pn">${esc(p.name)}</div></th>`).join('')}</tr></thead>
+  return `<table class="sh ${P.length >= 5 ? 'compact' : ''}"><thead><tr><th class="n">#</th>${P.map((p, i) => `<th class="${i === hlCol ? 'cur hl-' + G.w.mode : ''}" onclick="headTap(${i})"><div class="pe">${esc(p.emoji)}</div><div class="pn">${esc(p.name)}</div></th>`).join('')}</tr></thead>
     <tbody>${body}</tbody>
     <tfoot><tr><td class="n">Σ</td>${tot.map(t => `<td class="${sgn(t)}">${fmt(t)}</td>`).join('')}</tr></tfoot></table>`;
 }
 function afterGameRender() {
   const tw = $('#tw');
-  if (tw && G.w.idx === G.hands.length - 1) tw.scrollTop = tw.scrollHeight;
+  const c = tw && tw.querySelector('td.cur');
+  if (c) {   // porta in vista la casella del giocatore di turno
+    const row = c.parentElement;
+    tw.scrollLeft = Math.max(0, c.offsetLeft - tw.clientWidth / 2 + c.offsetWidth / 2);
+    if (G.w.idx === G.hands.length - 1) tw.scrollTop = tw.scrollHeight;
+    else tw.scrollTop = Math.max(0, row.offsetTop - 70);
+  } else if (tw && G.w.idx === G.hands.length - 1) tw.scrollTop = tw.scrollHeight;
   if (G.w.mode === 'sign') initSig();
   wake();
 }
@@ -449,12 +498,12 @@ function betsSheet() {
     const first = betStep(-1, 1) === i;
     const onlyDealer = Object.keys(w.draft).every(k => w.draft[k] === 'M');
     return `${dealerTaken && !w.single ? `<div class="glob"><span class="lbl">🃏 Mazziere: <b>${pn(dIdx)}</b> · resta lui fino alla matta</span></div>` : ''}
-      <div class="shead"><h3>Puntata di <b>${pn(i)}</b></h3><span class="prog">${order.indexOf(i) + 1}/${order.length}</span></div>
+      <div class="who"><span class="we">${esc(P[i].emoji)}</span><span><div class="wl">🎯 Puntata di</div><div class="wn">${esc(P[i].name)}</div></span><span class="wx">mano ${w.idx + 1}<b>${order.indexOf(i) + 1}/${order.length}</b></span></div>
       <div class="grid g3">${[10, 20, 30, 40, 50].map(v => `<button class="btn bigbtn ${w.draft[i] === v ? 'sel' : ''}" onclick="pickBet(${v})">${v}</button>`).join('')}
         <button class="btn bigbtn dealer ${w.draft[i] === 'M' ? 'sel' : ''}" ${dealerTaken ? 'disabled' : ''} onclick="pickBet('M')">🃏 Mazziere</button></div>
       <div class="row">
         ${!first && !w.single ? `<button class="btn sm ghost" onclick="betNav(-1)">◀ Indietro</button>` : ''}
-        ${w.single ? `<button class="btn sm ghost" onclick="toReview()">◀ Torna al riepilogo</button>` : ''}
+        ${w.single ? `<button class="btn sm ghost" onclick="toReview()">${backLabel()}</button>` : ''}
         ${first && !w.single && prev && prev.stage === 'done' && !G.cuts[w.idx - 1] && onlyDealer && dealerOf(prev) === (dealerTaken ? dIdx : dealerOf(prev)) ? `<button class="btn sm" onclick="copyPrevBets()">↺ Stesse puntate della mano ${w.idx}</button>` : ''}
         ${cancelBtn()}
       </div>`;
@@ -473,7 +522,8 @@ function pickBet(v) {
   if (v === 'M') for (const k in w.draft) if (w.draft[k] === 'M') delete w.draft[k];
   w.draft[w.i] = v;
   const nx = betStep(w.i, 1);
-  if (w.single || nx < 0) { w.single = false; w.review = true; } else w.i = nx;
+  if (w.single && w.back != null) { w.single = false; w.i = w.back; w.back = null; }
+  else if (w.single || nx < 0) { w.single = false; w.review = true; } else w.i = nx;
   commit();
 }
 // prossimo/precedente giocatore che deve puntare (salta il mazziere già scelto)
@@ -484,7 +534,13 @@ function betStep(from, dir) {
 }
 function betNav(d) { const k = betStep(G.w.i, d); if (k >= 0) G.w.i = k; commit(); }
 function editBet(i) { Object.assign(G.w, { i, single: true, review: false }); commit(); }
-function toReview() { Object.assign(G.w, { single: false, review: true, piste: null }); commit(); }
+function toReview() {
+  const w = G.w;
+  if (w.back != null) Object.assign(w, { single: false, i: w.back, back: null, piste: null });
+  else Object.assign(w, { single: false, review: true, piste: null });
+  commit();
+}
+const backLabel = () => G.w.back != null ? '◀ Torna dove ero' : '◀ Torna al riepilogo';
 function copyPrevBets() { G.w.draft = { ...G.hands[G.w.idx - 1].bets }; G.w.review = true; commit(); }
 function confirmBets() {
   const w = G.w, h = G.hands[w.idx];
@@ -533,13 +589,13 @@ function resSheet() {
     const i = nd[w.i], b = h.bets[i], cur = w.draft[i]?.k;
     const B = (k, txt, cls) => `<button class="btn res ${cls} ${cur === k ? 'sel' : ''}" onclick="pickRes('${k}')">${txt}<small>${fmt(rDelta(b, { k }))}</small></button>`;
     return `${w.single ? '' : globBtns()}
-      <div class="shead"><h3>Esito di <b>${pn(i)}</b> <small>· puntata ${b}</small></h3><span class="prog">${w.i + 1}/${nd.length}</span></div>
+      <div class="who res"><span class="we">${esc(G.players[i].emoji)}</span><span><div class="wl">📋 Risultato di</div><div class="wn">${esc(G.players[i].name)}</div></span><span class="wx">puntata<b>${b}</b>${w.i + 1}/${nd.length}</span></div>
       <div class="grid g2">${B('L', '− Perso', 'lose')}${B('W', '+ Vinto', 'win')}${B('W2', '×2 d’emblée', 'win')}${B('W3', '×3 triplée', 'win')}</div>
       <button class="btn res piste ${cur === 'P' ? 'sel' : ''}" onclick="openPiste(${i})">🛤 Piste (ha splittato)</button>
       <div class="grid g2" style="margin-top:8px">${B('L2', 'Paga ×2 al mazziere', 'lose')}${B('L3', 'Paga ×3 al mazziere', 'lose')}</div>
       <div class="row">
         ${w.i > 0 && !w.single ? `<button class="btn sm ghost" onclick="resNav(-1)">◀ Indietro</button>` : ''}
-        ${w.single ? `<button class="btn sm ghost" onclick="toReview()">◀ Torna al riepilogo</button>` : ''}
+        ${w.single ? `<button class="btn sm ghost" onclick="toReview()">${backLabel()}</button>` : ''}
         ${!w.single && !w.ret ? `<button class="btn sm ghost" onclick="G.w={mode:'wait',idx:G.w.idx};commit()">✕ Annulla</button>` : ''}
         ${cancelBtn()}
       </div>`;
@@ -559,7 +615,8 @@ function resSheet() {
 }
 function advanceRes() {
   const w = G.w, nd = nonDealers(G.hands[w.idx]);
-  if (w.single || w.i >= nd.length - 1) { w.single = false; w.review = true; } else w.i++;
+  if (w.single && w.back != null) { w.single = false; w.i = w.back; w.back = null; }
+  else if (w.single || w.i >= nd.length - 1) { w.single = false; w.review = true; } else w.i++;
 }
 function pickRes(k) { const w = G.w, i = nonDealers(G.hands[w.idx])[w.i]; w.draft[i] = { k }; advanceRes(); commit(); }
 function resNav(d) { G.w.i = Math.max(0, G.w.i + d); commit(); }
@@ -644,14 +701,47 @@ function handMenu(idx) {
     ${isLast && h.stage !== 'bets' ? `<button class="btn red" onclick="closeModal();resetHand(${idx})">🗑 Cancella questa mano e rifalla</button>` : ''}
     <button class="btn ghost" onclick="closeModal()">Chiudi</button>`);
 }
-function editHandBets(idx) {
+function editHandBets(idx, pi) {
   const h = G.hands[idx], ret = G.w.mode === 'wait' && G.w.idx === idx ? null : { ...G.w };
-  G.w = { mode: 'bets', idx, i: 0, draft: { ...h.bets }, review: true, ret };
+  G.w = { mode: 'bets', idx, i: pi ?? 0, draft: { ...h.bets }, review: pi == null, single: pi != null, ret };
   commit();
 }
-function editHandRes(idx) {
-  G.w = { mode: 'res', idx, i: 0, draft: { ...G.hands[idx].res }, review: true, ret: { ...G.w } };
+function editHandRes(idx, pi) {
+  const k = pi == null ? 0 : nonDealers(G.hands[idx]).indexOf(pi);
+  G.w = { mode: 'res', idx, i: Math.max(0, k), draft: { ...G.hands[idx].res }, review: pi == null, single: pi != null, ret: { ...G.w } };
   commit();
+}
+// tocco su una casella della tabella: apre puntata o risultato di quel giocatore
+function cellTap(idx, i) {
+  const w = G.w, h = G.hands[idx];
+  if (w.mode === 'sign') return toast('Prima firma il mazzo o torna indietro');
+  if (w.idx === idx && w.mode === 'bets') {
+    if (w.review) return editBet(i);
+    if (i === w.i && !w.single) return;
+    if (w.back == null && !w.single) w.back = w.i;
+    Object.assign(w, { i, single: true }); return commit();
+  }
+  if (w.idx === idx && w.mode === 'res') {
+    const k = nonDealers(h).indexOf(i);
+    if (k < 0) return toast('È il mazziere: il suo conto si fa da solo');
+    w.piste = null;
+    if (w.review) return editRes(k);
+    if (k === w.i && !w.single) return commit();
+    if (w.back == null && !w.single) w.back = w.i;
+    Object.assign(w, { i: k, single: true }); return commit();
+  }
+  if (w.ret) return toast('Finisci prima la modifica in corso');
+  if (h.stage === 'bets') return;
+  if (h.stage === 'play') return editHandBets(idx, i);
+  const b = h.bets[i], r = h.res[i];
+  modal(`<h3>Mano ${idx + 1} · ${pn(i)}</h3>
+    <button class="btn" onclick="closeModal();editHandBets(${idx},${i})">🎯 Modifica la puntata<small>ora: ${b === 'M' ? 'mazziere' : b}</small></button>
+    ${b !== 'M' ? `<button class="btn" onclick="closeModal();editHandRes(${idx},${i})">📋 Modifica il risultato<small>ora: ${rLabel(r)} → ${fmt(rDelta(b, r))}</small></button>` : ''}
+    <button class="btn ghost" onclick="closeModal()">Chiudi</button>`);
+}
+function headTap(i) {
+  const w = G.w;
+  if (w.mode === 'bets' || w.mode === 'res') cellTap(w.idx, i);
 }
 function resetHand(idx) {
   confirmModal(`Cancellare la mano ${idx + 1}?`, 'Puntate e risultati di questa mano vengono cancellati e la rifai da capo.', 'Cancella', () => {
@@ -715,10 +805,120 @@ function summaryHTML() {
       ? (pending ? `<div class="warn">⏳ Non ancora salvata in classifica (manca la connessione?). Resta in memoria e riprovo in automatico.</div><button class="btn" onclick="flushPending().then(render)">Riprova ora</button>`
                  : `<div class="ok">✅ Salvata nella classifica FISM${SYNC === 'local' ? ' (su questo telefono)' : ''}</div>`)
       : `<div class="muted">Partita a cazz de cane: non è stato salvato niente.</div>`}
+    <button class="btn wa big" onclick="shareSession()">📲 Condividi su WhatsApp</button>
     <button class="btn primary big" onclick="finishAll()">🏠 Torna all’inizio</button>
   </div></div>`;
 }
 function finishAll() { G = null; LS.del('sem_game'); S.view = 'home'; render(); }
+
+/* ===== CONDIVISIONE WHATSAPP ===== */
+const APP_URL = 'https://theonlybzfx.github.io/setteemmezzo/';
+const medal = i => ['🥇', '🥈', '🥉'][i] || `${i + 1}.`;
+function rankText() {
+  return `🏆 *Classifica FISM aggiornata*\n` + ranking().map((r, i) => `${medal(i)} ${r.emoji} ${r.name}  *${fmt(r.score)}*`).join('\n');
+}
+function sendWA(text) {
+  const url = 'https://wa.me/?text=' + encodeURIComponent(text);
+  const w = window.open(url, '_blank');
+  if (!w) location.href = url;
+}
+function shareRanking() {
+  sendWA(`🃏 *Sette e Mezzo · FISM*\n📅 ${new Date().toLocaleDateString('it-IT')}\n\n${rankText()}\n\n👉 ${APP_URL}`);
+}
+function resultsText(entries) {
+  return entries.slice().sort((a, b) => b.t - a.t).map(e => `${e.emoji} ${e.name}  *${fmt(e.t)}*`).join('\n');
+}
+function shareSession() {
+  const fism = G.type === 'fism';
+  const entries = G.players.map((p, i) => ({ emoji: p.emoji, name: p.name, t: G.final[i] }));
+  let t = `🃏 *Sette e Mezzo · ${fism ? 'Partita Ufficiale FISM' : 'Partita a cazz de cane'}*\n📅 ${new Date(G.endedAt || Date.now()).toLocaleDateString('it-IT')} · ${G.mani} ${G.mani === 1 ? 'mano' : 'mani'}\n\n*Risultati della serata*\n${resultsText(entries)}`;
+  if (fism) t += `\n\n${rankText()}`;
+  sendWA(t + `\n\n👉 ${APP_URL}`);
+}
+
+/* ===== CARICA RISULTATI (conti fatti sul foglio) ===== */
+function startLoad() { S.load = { v: {}, neg: {}, nuovi: [] }; S.view = 'load'; render(); }
+function loadEntries() {
+  const L = S.load, g = allPlayers(), out = [];
+  const add = (id, name, emoji, isNew) => {
+    const raw = (L.v[id] || '').replace(/\D/g, '');
+    if (raw === '') return;
+    const n = parseInt(raw, 10) * (L.neg[id] ? -1 : 1);
+    out.push({ id, name, emoji, isNew, t: n });
+  };
+  regList().forEach(p => add(p.id, p.name, p.emoji, false));
+  L.nuovi.forEach(p => { if (!g[p.id]) add(p.id, p.name, p.emoji, true); });
+  return out;
+}
+function loadHTML() {
+  const L = S.load;
+  const rows = [...regList().map(p => ({ ...p, isNew: false })), ...L.nuovi.filter(p => !allPlayers()[p.id]).map(p => ({ ...p, isNew: true }))];
+  return `<header class="top"><button class="btn sm ghost" onclick="goHome()">←</button><div class="title">📝 Carica risultati <small>🏆 FISM</small></div></header>
+  <div class="scroll"><div class="load">
+    <p class="muted" style="margin-top:0">Hai fatto i conti sul foglio? Scrivi il risultato finale di chi ha giocato e tocca <b>+</b>/<b>−</b> per il segno. Lascia vuoto chi non c’era.</p>
+    ${rows.map(p => `<div class="lrow"><span class="em">${esc(p.emoji)}</span><span class="nm">${esc(p.name)}${p.isNew ? ' <small class="muted">(nuovo)</small>' : ''}</span>
+      <button class="btn sg ${L.neg[p.id] ? 'm' : 'p'}" onclick="toggleSign('${esc(p.id)}',this)">${L.neg[p.id] ? '−' : '+'}</button>
+      <input inputmode="numeric" pattern="[0-9]*" placeholder="—" value="${esc(L.v[p.id] || '')}" oninput="loadInput('${esc(p.id)}',this)"></div>`).join('')}
+    <div class="newp" style="padding:12px 0 0"><input id="lnName" placeholder="Nuovo giocatore"><input id="lnEmo" class="emo" placeholder="🙂"><button class="btn sm" onclick="addLoadPlayer()">Aggiungi</button></div>
+  </div></div>
+  <div class="loadbar"><span class="sum" id="lsum"></span><button class="btn primary" onclick="reviewLoad()">Controlla ▶</button></div>`;
+}
+function loadInput(id, el) {
+  const L = S.load;
+  if (el.value.includes('-')) { L.neg[id] = true; const b = el.parentElement.querySelector('.sg'); b.textContent = '−'; b.className = 'btn sg m'; }
+  el.value = el.value.replace(/\D/g, '');
+  L.v[id] = el.value; updLoadSum();
+}
+function toggleSign(id, b) { const L = S.load; L.neg[id] = !L.neg[id]; b.textContent = L.neg[id] ? '−' : '+'; b.className = 'btn sg ' + (L.neg[id] ? 'm' : 'p'); updLoadSum(); }
+function updLoadSum() {
+  const el = $('#lsum'); if (!el) return;
+  const e = loadEntries(), sum = e.reduce((a, b) => a + b.t, 0);
+  el.innerHTML = `${e.length} giocatori · somma <b class="${sum === 0 ? 'pos-c' : 'neg-c'}">${sum === 0 ? '0 ✓' : fmt(sum)}</b>`;
+}
+function addLoadPlayer() {
+  const name = $('#lnName').value.trim(); if (!name) return toast('Scrivi il nome');
+  const id = slug(name);
+  if (allPlayers()[id] || S.load.nuovi.some(p => p.id === id)) return toast(`${name} c’è già nella lista`);
+  S.load.nuovi.push({ id, name, emoji: $('#lnEmo').value.trim() || '🃏' }); render();
+}
+function reviewLoad() {
+  const e = loadEntries();
+  if (e.length < 2) return toast('Scrivi i risultati di almeno 2 giocatori');
+  const sum = e.reduce((a, b) => a + b.t, 0);
+  const rk = {}; ranking().forEach(r => rk[r.id] = r.score);
+  modal(`<h3>📝 Controlla prima di salvare</h3>
+    <ol class="rank">${e.slice().sort((a, b) => b.t - a.t).map((o, k) => `<li><span class="pos">${k + 1}</span><span class="em">${esc(o.emoji)}</span><span class="nm">${esc(o.name)}<span class="sub">classifica ${fmt(rk[o.id] ?? 0)} → <b class="${sgn((rk[o.id] ?? 0) + o.t)}">${fmt((rk[o.id] ?? 0) + o.t)}</b></span></span><span class="sc ${sgn(o.t)}">${fmt(o.t)}</span></li>`).join('')}</ol>
+    <div class="${sum === 0 ? 'ok' : 'warn'}">Somma di tutti: ${sum === 0 ? '0 · i conti tornano ✓' : `${fmt(sum)} ⚠️ non fa zero: controlla il foglio`}</div>
+    <p>Confermando, questi risultati vengono <b>aggiunti alla classifica FISM</b>.</p>
+    <button class="btn ${sum === 0 ? 'primary' : 'red'}" onclick="closeModal();saveLoad()">${sum === 0 ? '✓ Salva in classifica' : 'Salva comunque'}</button>
+    <button class="btn" onclick="closeModal()">◀ Correggi</button>`);
+}
+function saveLoad() {
+  const e = loadEntries(), deltas = {}, nuovi = {};
+  e.forEach(x => { deltas[x.id] = x.t; if (x.isNew) nuovi[x.id] = { name: x.name, emoji: x.emoji, base: 0, order: 999 }; });
+  const id = 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const pend = LS.get('sem_pending', []);
+  pend.push({ id, date: new Date().toISOString(), type: 'fism', fonte: 'foglio', mani: null, deltas, nuovi, giocatori: e.map(x => x.name) });
+  LS.set('sem_pending', pend);
+  S.loaded = { id, entries: e, date: Date.now() }; S.load = null; S.view = 'loaded'; render();
+  flushPending().then(render);
+}
+function loadedHTML() {
+  const Ld = S.loaded, pending = LS.get('sem_pending', []).some(x => x.id === Ld.id);
+  const rk = {}; ranking().forEach(r => rk[r.id] = r.score);
+  return `<header class="top"><div class="logo">7½</div><div class="title">✅ Risultati caricati</div></header>
+  <div class="scroll"><div class="home">
+    <ol class="rank">${Ld.entries.slice().sort((a, b) => b.t - a.t).map((o, k) => `<li><span class="pos">${k + 1}</span><span class="em">${esc(o.emoji)}</span><span class="nm">${esc(o.name)}<span class="sub">classifica ${fmt(rk[o.id] ?? 0)}</span></span><span class="sc ${sgn(o.t)}">${fmt(o.t)}</span></li>`).join('')}</ol>
+    ${pending ? `<div class="warn">⏳ Non ancora salvati (manca la connessione?). Restano in memoria e riprovo in automatico.</div><button class="btn" onclick="flushPending().then(render)">Riprova ora</button>`
+              : `<div class="ok">✅ Salvati nella classifica FISM${SYNC === 'local' ? ' (su questo telefono)' : ''}</div>`}
+    <button class="btn wa big" onclick="shareLoaded()">📲 Condividi su WhatsApp</button>
+    <button class="btn primary big" onclick="S.loaded=null;goHome()">🏠 Torna all’inizio</button>
+  </div></div>`;
+}
+function shareLoaded() {
+  const Ld = S.loaded;
+  sendWA(`🃏 *Sette e Mezzo · Partita Ufficiale FISM*\n📅 ${new Date(Ld.date).toLocaleDateString('it-IT')}\n\n*Risultati della serata*\n${resultsText(Ld.entries)}\n\n${rankText()}\n\n👉 ${APP_URL}`);
+}
 
 /* ---------- schermo sempre acceso durante la partita ---------- */
 let wl = null;
