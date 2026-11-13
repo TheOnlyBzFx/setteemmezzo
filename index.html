@@ -11,7 +11,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231e1e1e'/><text x='50' y='70' font-size='56' text-anchor='middle' fill='%23e8b84a' font-family='Georgia'>7½</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#1e1e1e;--bg2:#171717;--panel:#262626;--line:#3a3a3a;--chalk:#f4f1ea;--red:#e0442f;--green:#5fd39a;--muted:#9a968e;--gold:#e8b84a}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -21,11 +21,11 @@ body{overflow:hidden;overscroll-behavior:none}
 #app{height:100vh;height:100dvh;display:flex;flex-direction:column}
 small{font-weight:400}
 .muted{color:var(--muted)}
-.hand{font-family:'Patrick Hand',cursive}
+.hand{font-family:'Poppins',sans-serif;font-weight:600}
 .top{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 10px) 8px calc(env(safe-area-inset-left) + 10px);background:var(--bg2);border-bottom:1px solid var(--line);flex:none}
 .top .title{flex:1;font-weight:800;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top .title small{color:var(--muted);font-size:13px;margin-left:4px}
-.logo{font-family:'Patrick Hand',cursive;font-size:30px;color:var(--gold);line-height:1;padding:0 4px}
+.logo{font-family:'Poppins',sans-serif;font-weight:700;font-size:24px;color:var(--gold);line-height:1;padding:0 4px}
 .scroll{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
 .btn{appearance:none;border:1px solid #444;background:#2e2e2e;color:var(--chalk);border-radius:14px;padding:13px 14px;font:600 16px Inter,system-ui,sans-serif;cursor:pointer;touch-action:manipulation;transition:transform .06s}
 .btn:active{transform:scale(.97)}
@@ -49,14 +49,14 @@ ol.rank .pos{width:24px;text-align:right;color:var(--muted);font-size:14px}
 ol.rank li:nth-child(1) .pos{color:var(--gold);font-weight:800}
 ol.rank .em{width:28px;text-align:center;font-size:20px}
 ol.rank .nm{flex:1}
-ol.rank .sc{font-family:'Patrick Hand',cursive;font-size:24px}
+ol.rank .sc{font-family:'Poppins',sans-serif;font-weight:600;font-size:19px}
 ol.rank .sub{font-size:13px;color:var(--muted);margin-left:6px}
 .pos-c{color:var(--green)}.neg-c{color:var(--red)}
 /* setup */
 .setup{padding:14px 14px 40px;max-width:560px;margin:0 auto}
 .setup h3{margin:18px 0 8px;font-size:16px;color:var(--muted);font-weight:600}
 .stepper{display:flex;align-items:center;gap:16px}
-.stepper span{font-family:'Patrick Hand',cursive;font-size:36px;min-width:40px;text-align:center}
+.stepper span{font-family:'Poppins',sans-serif;font-weight:600;font-size:29px;min-width:40px;text-align:center}
 .stepper .btn{width:52px;height:52px;font-size:24px;padding:0}
 .slot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}
 .slot .num{width:22px;color:var(--muted);text-align:right}
@@ -68,26 +68,27 @@ select,input{font:16px Inter,system-ui,sans-serif;background:#2b2b2b;color:var(-
 /* table */
 .gbody{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
 .tw{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;position:relative;background:var(--bg)}
-table.sh{border-collapse:separate;border-spacing:0;min-width:100%;font-family:'Patrick Hand',cursive}
+table.sh{border-collapse:separate;border-spacing:0;min-width:100%;font-family:'Poppins',sans-serif;font-variant-numeric:tabular-nums}
 .sh th{position:sticky;top:0;z-index:2;background:var(--bg);padding:6px 4px 4px;border-bottom:2px solid var(--chalk);border-left:2px solid var(--chalk);font-weight:400;min-width:70px;text-align:center}
 .sh th .pe{font-size:17px;line-height:1.1}
-.sh th .pn{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px;margin:0 auto}
+.sh th .pn{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px;margin:0 auto}
 .sh td{border-left:2px solid var(--chalk);padding:3px 6px;height:44px;vertical-align:middle}
-.sh .n{position:sticky;left:0;z-index:1;background:var(--bg);color:var(--muted);text-align:center;width:30px;min-width:30px;border-left:none;font-size:16px;padding:0;cursor:pointer}
+.sh .n{position:sticky;left:0;z-index:1;background:var(--bg);color:var(--muted);text-align:center;width:30px;min-width:30px;border-left:none;font-size:13px;padding:0;cursor:pointer}
 .sh thead .n{z-index:3}
 .cell{display:flex;justify-content:space-between;align-items:center;gap:3px;white-space:nowrap}
-.bet{font-size:25px;line-height:1}
+.bet{font-size:20px;line-height:1;font-weight:600}
 .bet.m{color:var(--gold)}
 .bet.empty{color:#555}
-.r{color:var(--red);font-size:17px;position:relative;top:-9px;margin-left:1px}
-.run{font-size:16px;color:var(--muted)}
+.r{color:var(--red);font-size:12px;font-weight:700;position:relative;top:-8px;margin-left:1px}
+.run{font-size:12px;font-weight:500;color:var(--muted)}
 .run.p{color:#a8e6c4}.run.q{color:#f3a597}
+td.absent{background:repeating-linear-gradient(135deg,transparent 0 6px,rgba(255,255,255,.035) 6px 12px)}
 td.cur{background:rgba(232,184,74,.16)}
 tr.draft td:not(.n){background:rgba(255,255,255,.03)}
 tr.cut td{padding:0;height:auto;border-left:none}
 .cutbox{position:sticky;left:0;display:flex;align-items:center;gap:10px;border-top:3px solid var(--chalk);margin:2px 0 4px;padding:3px 8px;width:min(100vw,100%);font-family:Inter,sans-serif;font-size:12px;color:var(--muted)}
 .cutbox img{height:34px;filter:none}
-.sh tfoot td{position:sticky;bottom:0;z-index:1;background:#141414;border-top:2px solid var(--chalk);height:40px;font-size:22px;text-align:center}
+.sh tfoot td{position:sticky;bottom:0;z-index:1;background:#141414;border-top:2px solid var(--chalk);height:40px;font-size:17px;font-weight:700;text-align:center}
 .sh tfoot td.n{z-index:3;color:var(--gold);font-size:18px}
 .empty-hint{padding:30px 16px;text-align:center;color:var(--muted);font-family:Inter,sans-serif}
 /* bottom sheet */
@@ -102,7 +103,7 @@ tr.cut td{padding:0;height:auto;border-left:none}
 .who .we{font-size:32px;line-height:1}
 .who .wn{font-size:25px;font-weight:800;line-height:1.1}
 .who .wx{margin-left:auto;text-align:right;font-size:13px;font-weight:600;opacity:.8;white-space:nowrap}
-.who .wx b{display:block;font-family:'Patrick Hand',cursive;font-size:26px;font-weight:400;opacity:1}
+.who .wx b{display:block;font-family:'Poppins',sans-serif;font-size:21px;font-weight:600;opacity:1}
 .sh th.cur{background:var(--gold);color:#141414}
 .sh th.cur.hl-res,.sh td.cur.hl-res{--hl:#7fd9ff}
 .sh th.cur.hl-res{background:#7fd9ff}
@@ -111,15 +112,15 @@ td.cur.hl-res{background:rgba(127,217,255,.18)!important}
 @keyframes pulse{50%{box-shadow:inset 0 0 0 1px var(--hl,var(--gold))}}
 .sh tbody td:not(.n){cursor:pointer}
 .sh.compact th{min-width:0;padding:5px 2px 3px}
-.sh.compact th .pn{font-size:15px;max-width:62px}
+.sh.compact th .pn{font-size:12px;max-width:62px}
 .sh.compact th .pe{font-size:15px}
 .sh.compact td{padding:2px 3px;height:40px}
-.sh.compact .bet{font-size:21px}
-.sh.compact .r{font-size:13px;top:-7px}
-.sh.compact .run{font-size:13px}
+.sh.compact .bet{font-size:17px}
+.sh.compact .r{font-size:10px;top:-6px}
+.sh.compact .run{font-size:10.5px}
 .sh.compact .cell{flex-direction:column;align-items:flex-start;gap:0}
 .sh.compact .cell .run{align-self:flex-end;line-height:1}
-.sh.compact tfoot td{font-size:18px}
+.sh.compact tfoot td{font-size:14px}
 .sh.compact .n{width:22px;min-width:22px;font-size:13px}
 .tap-hint{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
 .btnrow2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
@@ -131,7 +132,7 @@ td.cur.hl-res{background:rgba(127,217,255,.18)!important}
 .lrow .sg{width:44px;height:44px;padding:0;font-size:22px;border-radius:12px}
 .lrow .sg.p{color:var(--green);border-color:#2f6b4c}
 .lrow .sg.m{color:var(--red);border-color:#7a2e24}
-.lrow input{width:96px;text-align:right;font-family:'Patrick Hand',cursive;font-size:22px;padding:8px 10px}
+.lrow input{width:96px;text-align:right;font-family:'Poppins',sans-serif;font-weight:600;font-size:18px;padding:8px 10px}
 .loadbar{position:sticky;bottom:0;background:var(--panel);border-top:1px solid #444;padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px}
 .loadbar .sum{flex:1;font-size:15px}
 textarea{width:100%;min-height:300px;font:16px/1.45 Inter,system-ui,sans-serif;background:#2b2b2b;color:var(--chalk);border:1px solid #474747;border-radius:12px;padding:12px;resize:vertical}
@@ -140,7 +141,7 @@ textarea{width:100%;min-height:300px;font:16px/1.45 Inter,system-ui,sans-serif;b
 .grid{display:grid;gap:8px}
 .g3{grid-template-columns:repeat(3,1fr)}
 .g2{grid-template-columns:repeat(2,1fr)}
-.bigbtn{font-family:'Patrick Hand',cursive;font-size:30px;padding:10px 0}
+.bigbtn{font-family:'Poppins',sans-serif;font-weight:600;font-size:24px;padding:10px 0}
 .bigbtn.dealer{font-family:Inter,sans-serif;font-size:15px;color:var(--gold)}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
 .res{font-size:16px;padding:12px 8px}
@@ -152,7 +153,7 @@ textarea{width:100%;min-height:300px;font:16px/1.45 Inter,system-ui,sans-serif;b
 .list{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
 .li{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:#2e2e2e;border:1px solid #3d3d3d;color:var(--chalk);border-radius:12px;padding:10px 12px;font:16px Inter,sans-serif;cursor:pointer}
 .li span:first-child{flex:1}
-.li b{font-family:'Patrick Hand',cursive;font-size:22px;font-weight:400}
+.li b{font-family:'Poppins',sans-serif;font-size:18px;font-weight:600}
 .li .ed{opacity:.5;font-size:13px}
 .li.pr{cursor:default;gap:6px;padding:6px 8px 6px 12px}
 .li.pr .pn2{flex:1;cursor:pointer;min-width:0}
@@ -175,7 +176,7 @@ textarea{width:100%;min-height:300px;font:16px/1.45 Inter,system-ui,sans-serif;b
 @keyframes flash{50%{box-shadow:0 0 0 4px var(--gold)}}
 .rtop{display:flex;justify-content:space-between;align-items:center;gap:6px}
 .rn{font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rt{font-family:'Patrick Hand',cursive;font-size:27px;font-weight:400;line-height:1}
+.rt{font-family:'Poppins',sans-serif;font-size:22px;font-weight:600;line-height:1}
 .rbot{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px}
 .seg{display:inline-flex;border:1px solid #555;border-radius:10px;overflow:hidden;flex:none}
 .seg button{background:#262626;color:var(--chalk);border:none;padding:10px 9px;font:600 14px Inter,sans-serif;cursor:pointer;touch-action:manipulation}
@@ -187,7 +188,7 @@ textarea{width:100%;min-height:300px;font:16px/1.45 Inter,system-ui,sans-serif;b
 .cnt{display:flex;align-items:center;gap:3px;flex:none}
 .cnt .btn{width:38px;height:38px;padding:0;font-size:21px;border-radius:10px}
 .cv{display:flex;flex-direction:column;align-items:center;min-width:30px;line-height:1}
-.cv b{font-family:'Patrick Hand',cursive;font-size:24px;font-weight:400}
+.cv b{font-family:'Poppins',sans-serif;font-size:19px;font-weight:600}
 .cv small{font-size:10px;color:var(--muted)}
 .hcard{display:block;width:100%;text-align:left;background:#2a2a2a;border:1px solid #3d3d3d;border-radius:14px;padding:11px 13px;margin-bottom:8px;color:var(--chalk);font:15px Inter,sans-serif;cursor:pointer}
 .hcard .hd{font-weight:700;display:flex;justify-content:space-between;gap:8px}
@@ -209,7 +210,7 @@ textarea{width:100%;min-height:300px;font:16px/1.45 Inter,system-ui,sans-serif;b
 .pe2{font-size:26px;line-height:1}
 .pnm b{display:block;font-size:22px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pnm small{display:block;font-size:12px;color:var(--muted)}
-.pval{font-family:'Patrick Hand',cursive;font-size:30px;font-weight:400;min-width:62px;text-align:right}
+.pval{font-family:'Poppins',sans-serif;font-size:24px;font-weight:600;min-width:62px;text-align:right}
 .cnt.big .btn{width:46px;height:46px;font-size:26px}
 .cnt.big .cv{min-width:38px}
 .cnt.big .cv b{font-size:26px}
@@ -222,9 +223,9 @@ textarea{width:100%;min-height:300px;font:16px/1.45 Inter,system-ui,sans-serif;b
 .gh span{font-size:13px;color:var(--muted)}
 table.gt{width:100%;border-collapse:collapse;font-size:15px}
 table.gt td{padding:5px 4px;border-top:1px solid #333}
-table.gt td.v{font-family:'Patrick Hand',cursive;font-size:21px;text-align:right;white-space:nowrap}
+table.gt td.v{font-family:'Poppins',sans-serif;font-weight:600;font-size:17px;text-align:right;white-space:nowrap}
 table.gt td.b{color:var(--muted);text-align:center;white-space:nowrap}
-table.gt td.e{color:var(--red);text-align:center;font-family:'Patrick Hand',cursive;font-size:18px}
+table.gt td.e{color:var(--red);text-align:center;font-family:'Poppins',sans-serif;font-weight:600;font-size:14px}
 table.gt tr.dl td{color:var(--gold)}
 .gcut{display:flex;align-items:center;gap:8px;margin:4px 0 14px;color:var(--muted);font-size:13px}
 .gcut:before,.gcut:after{content:'';flex:1;border-top:3px solid var(--chalk)}
@@ -242,7 +243,7 @@ table.gt tr.dl td{color:var(--gold)}
 .chartbox{position:relative;background:#1a1a19;border:1px solid #333;border-radius:16px;padding:8px 6px 4px;margin-bottom:10px}
 .chartbox svg{width:100%;height:auto;display:block;touch-action:pan-y}
 .chartbox .tip{position:absolute;top:8px;pointer-events:none;background:rgba(10,10,10,.92);border:1px solid #444;border-radius:10px;padding:6px 9px;font-size:12px;line-height:1.5;display:none;white-space:nowrap;z-index:2}
-.chartbox .tip b{font-family:'Patrick Hand',cursive;font-size:16px;font-weight:400}
+.chartbox .tip b{font-family:'Poppins',sans-serif;font-size:13px;font-weight:600}
 .seg2{display:flex;border:1px solid #555;border-radius:10px;overflow:hidden;margin-bottom:10px}
 .seg2 button{flex:1;background:#262626;color:var(--chalk);border:none;padding:9px 6px;font:600 13px Inter,sans-serif;cursor:pointer}
 .seg2 button.on{background:var(--gold);color:#141414}
@@ -253,13 +254,19 @@ table.gt tr.dl td{color:var(--gold)}
 .lgd button{display:flex;align-items:center;gap:6px;background:#262626;border:1px solid #3d3d3d;border-radius:20px;padding:5px 10px 5px 7px;color:var(--chalk);font:13px Inter,sans-serif;cursor:pointer}
 .lgd button.off{opacity:.45}
 .lgd i{width:12px;height:12px;border-radius:50%;flex:none}
-.lgd b{font-family:'Patrick Hand',cursive;font-size:16px;font-weight:400}
+.lgd b{font-family:'Poppins',sans-serif;font-size:13px;font-weight:600}
+.login{max-width:360px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 70px) 24px 40px;text-align:center}
+.login h2{margin:8px 0 4px}
+.login input{width:100%;text-align:center;font-size:20px;margin-top:14px}
+.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+@media (max-width:430px){ .top .tl{display:none} }
 .li.dealer{border-color:#6b5a2a;background:#2f2a1d;cursor:default}
 .warn{background:#3a2320;border:1px solid #7a2e24;color:#ffb4a8;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
 .ok{background:#1f3328;border:1px solid #2f6b4c;color:#a8e6c4;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
 .pst{display:flex;align-items:center;gap:12px;margin:8px 0}
 .pst span{flex:1}
-.pst b{font-family:'Patrick Hand',cursive;font-size:34px;min-width:36px;text-align:center;font-weight:400}
+.pst b{font-family:'Poppins',sans-serif;font-size:27px;min-width:36px;text-align:center;font-weight:600}
 .pst .btn{width:52px;height:48px;padding:0;font-size:24px}
 canvas#sig{width:100%;height:140px;background:#1a1a1a;border:1px dashed #666;border-radius:12px;touch-action:none;display:block;margin-top:8px}
 .signrow{display:flex;gap:8px;align-items:center;margin-top:6px}
@@ -299,11 +306,11 @@ canvas#sig{width:100%;height:140px;background:#1a1a1a;border:1px dashed #666;bor
   .gbody .sheet{width:min(420px,40vw);max-height:none;border-radius:0;border-top:none;border-left:1px solid #444;box-shadow:-10px 0 30px rgba(0,0,0,.35);
     padding:16px calc(env(safe-area-inset-right) + 16px) calc(16px + env(safe-area-inset-bottom)) 16px}
   .sh th{min-width:84px}
-  .sh th .pn{font-size:21px;max-width:130px}
+  .sh th .pn{font-size:17px;max-width:130px}
   .sh td{height:50px;padding:4px 8px}
-  .bet{font-size:29px}
-  .sh.compact th{min-width:72px}.sh.compact th .pn{font-size:18px;max-width:100px}
-  .sh.compact .bet{font-size:25px}.sh.compact .cell{flex-direction:row;align-items:center}
+  .bet{font-size:24px}
+  .sh.compact th{min-width:72px}.sh.compact th .pn{font-size:15px;max-width:100px}
+  .sh.compact .bet{font-size:20px}.sh.compact .cell{flex-direction:row;align-items:center}
 }
 /* modal */
 #modal{position:fixed;inset:0;z-index:50;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6)}
@@ -315,7 +322,7 @@ canvas#sig{width:100%;height:140px;background:#1a1a1a;border:1px dashed #666;bor
 table.mz{border-collapse:collapse;width:100%;font-size:14px;margin:4px 0}
 table.mz th,table.mz td{padding:5px 6px;border-bottom:1px solid #383838;text-align:center;white-space:nowrap}
 table.mz td:first-child{text-align:left;color:var(--muted)}
-table.mz td:not(:first-child){font-family:'Patrick Hand',cursive;font-size:19px}
+table.mz td:not(:first-child){font-family:'Poppins',sans-serif;font-weight:600;font-size:15px}
 .choice b{font-size:18px}
 #toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 60px);transform:translateX(-50%);background:#000;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
 #toast.on{opacity:.92}
@@ -461,8 +468,8 @@ const dealerOf = h => G.players.findIndex((_, i) => h.bets[i] === 'M');
 // ordine di gioco: si parte dal giocatore a destra del mazziere (colonna dopo) e si gira
 function playOrder(bets) {
   const n = G.players.length, d = G.players.findIndex((_, k) => bets[k] === 'M');
-  if (d < 0) return [...Array(n).keys()];
-  return Array.from({ length: n - 1 }, (_, k) => (d + 1 + k) % n);
+  if (d < 0) return [...Array(n).keys()].filter(k => bets[k] !== 'X');
+  return Array.from({ length: n - 1 }, (_, k) => (d + 1 + k) % n).filter(k => bets[k] !== 'X');
 }
 const nonDealers = h => playOrder(h.bets);
 function totals() { return G.players.map((_, i) => G.hands.reduce((s, h) => s + (h.stage === 'done' ? pDelta(h, i) : 0), 0)); }
@@ -485,9 +492,26 @@ function confirmModal(title, html, ok, fn, danger = true) {
 let _tt;
 function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove('on'), 2200); }
 
+/* ---------- password d'accesso ---------- */
+const PASS_HASH = 'b8c95d49';
+function phash(t) { let h = 0x811c9dc5; for (const c of new TextEncoder().encode(t)) { h ^= c; h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16); }
+const authed = () => LS.get('sem_auth', '') === PASS_HASH;
+function loginHTML() {
+  return `<div class="login"><div class="logo" style="font-size:56px">7½</div><h2>Sette e Mezzo · FISM</h2>
+    <p class="muted">Inserisci la password per entrare</p>
+    <form onsubmit="event.preventDefault();tryLogin()"><input id="pw" type="password" autocomplete="current-password" placeholder="Password">
+    <button class="btn primary big" type="submit">Entra</button></form></div>`;
+}
+function tryLogin() {
+  const el = $('#pw');
+  if (phash(el.value.trim()) === PASS_HASH) { LS.set('sem_auth', PASS_HASH); render(); }
+  else { el.value = ''; el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); toast('Password sbagliata'); }
+}
+
 /* ---------- render ---------- */
 function render() {
   const a = $('#app');
+  if (!authed()) { a.innerHTML = loginHTML(); setTimeout(() => $('#pw')?.focus(), 50); return; }
   if (S.view === 'home') a.innerHTML = homeHTML();
   else if (S.view === 'setup') a.innerHTML = setupHTML();
   else if (S.view === 'game' && G) { a.innerHTML = gameHTML(); afterGameRender(); }
@@ -595,7 +619,8 @@ function gameHTML() {
   <div class="sheet ${S.sheetMin ? 'min' : ''}" id="sheet"><button class="sheet-toggle" onclick="toggleSheet()">${S.sheetMin ? '▲ Riapri il pannello' : '▼ Guarda la tabella'}</button>${sheetHTML()}</div></div>`;
   return `<header class="top"><button class="btn sm ghost" onclick="goHome()">←</button>
     <div class="title">Mano ${G.w.idx + 1}<small>${G.type === 'fism' ? '🏆 FISM' : '🤙 a cazz de cane'}</small></div>
-    <button class="btn sm" onclick="openGioc()">📜 Giocate</button>
+    <button class="btn sm" onclick="openGioc()">📜<span class="tl"> Giocate</span></button>
+    <button class="btn sm" onclick="askAddPlayer()">➕<span class="tl"> Giocatore</span></button>
     <button class="btn sm red" onclick="askEnd()">FINE SESSIONE</button></header>
   <div class="gbody"><div class="tw" id="tw">${tableHTML()}</div>
   <div class="sheet ${S.sheetMin ? 'min' : ''}" id="sheet"><button class="sheet-toggle" onclick="toggleSheet()">${S.sheetMin ? '▲ Riapri ' + ({ bets: 'le puntate', res: 'i risultati' }[G.w.mode] || 'il pannello') : '▼ Guarda la tabella'}</button>${sheetHTML()}</div></div>`;
@@ -622,6 +647,7 @@ function tableHTML() {
       const b = vh.bets[i];
       let left, sup = '';
       if (b === undefined) left = `<span class="bet empty">·</span>`;
+      else if (b === 'X') return `<td class="absent" onclick="cellTap(${idx},${i})"><div class="cell"><span class="bet empty">–</span></div></td>`;
       else if (b === 'M') {
         left = `<span class="bet m">M</span>`;
         if ((vh.stage === 'done' || vh.stage === 'draftres') && resComplete) sup = `<span class="r">${fmt(pDelta(vh, i))}</span>`;
@@ -742,7 +768,7 @@ function toReview() {
   commit();
 }
 const backLabel = () => G.w.back != null ? '◀ Torna dove ero' : '◀ Torna al riepilogo';
-function copyPrevBets() { G.w.draft = { ...G.hands[G.w.idx - 1].bets }; G.w.review = true; commit(); }
+function copyPrevBets() { const d = { ...G.hands[G.w.idx - 1].bets }; for (const k in d) if (d[k] === 'X') delete d[k]; G.w.draft = d; G.w.review = true; commit(); }
 function confirmBets() {
   const w = G.w, h = G.hands[w.idx];
   h.bets = { ...w.draft };
@@ -865,6 +891,44 @@ function doSign() {
   toast('Mazzo firmato ✍️ Si rimischia!');
 }
 
+/* --- AGGIUNGI UN GIOCATORE (solo a inizio mazzo) --- */
+const canAddPlayer = () => G.w.mode === 'bets' && !G.w.ret && !G.w.single && !G.w.review && Object.keys(G.w.draft || {}).length === 0;
+function askAddPlayer() {
+  if (G.editOf) return;
+  if (!canAddPlayer()) return toast('Puoi aggiungere un giocatore solo quando finisce il mazzo: dopo la matta, prima di scegliere il mazziere');
+  if (G.players.length >= 6) return toast('Siete già in 6: è il massimo');
+  const P = G.players, avail = regList().filter(p => !P.some(q => q.id === p.id));
+  const pos = P.map((_, k) => k === 0 ? `All’inizio (prima di ${P[0].emoji} ${P[0].name})` : `Tra ${P[k - 1].emoji} ${P[k - 1].name} e ${P[k].emoji} ${P[k].name}`);
+  pos.push(`In fondo (dopo ${P[P.length - 1].emoji} ${P[P.length - 1].name})`);
+  modal(`<h3>➕ Aggiungi un giocatore</h3>
+    <select id="apSel" onchange="$('#apNew').style.display=this.value==='__new'?'flex':'none'">
+      <option value="">— scegli —</option>${avail.map(p => `<option value="${esc(p.id)}">${esc(p.emoji)} ${esc(p.name)}</option>`).join('')}
+      <option value="__new">➕ Nuovo giocatore…</option></select>
+    <div id="apNew" class="newp" style="display:none;padding:0"><input id="apName" placeholder="Nome"><input id="apEmo" class="emo" placeholder="🙂"></div>
+    <p style="margin:6px 0 0">Dove lo metto nella tabella?</p>
+    <select id="apPos">${pos.map((t, k) => `<option value="${k}" ${k === P.length ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
+    <p class="muted" style="font-size:13px;margin:0">Nelle mani già giocate la sua colonna resta vuota (–). Gioca da questo mazzo in poi.</p>
+    <button class="btn primary" onclick="doAddPlayer()">✓ Aggiungi alla partita</button>
+    <button class="btn ghost" onclick="closeModal()">Annulla</button>`);
+}
+function doAddPlayer() {
+  const sel = $('#apSel').value, pos = +$('#apPos').value, g = allPlayers();
+  let p;
+  if (!sel) return toast('Scegli il giocatore');
+  if (sel === '__new') {
+    const name = $('#apName').value.trim(); if (!name) return toast('Scrivi il nome');
+    const id = slug(name);
+    p = g[id] ? { id, name: g[id].name, emoji: g[id].emoji, isNew: false } : { id, name, emoji: $('#apEmo').value.trim() || '🃏', isNew: true };
+  } else p = { id: sel, name: g[sel].name, emoji: g[sel].emoji, isNew: false };
+  if (G.players.some(q => q.id === p.id)) return toast(`${p.name} è già in partita`);
+  const shift = o => { const r = {}; Object.keys(o || {}).forEach(k => { const n = +k; r[n >= pos ? n + 1 : n] = o[k]; }); return r; };
+  G.hands.forEach((h, idx) => { h.bets = shift(h.bets); h.res = shift(h.res); if (idx !== G.w.idx) h.bets[pos] = 'X'; });
+  G.w.draft = shift(G.w.draft);
+  G.players.splice(pos, 0, p);
+  closeModal(); commit();
+  toast(`${p.emoji} ${p.name} aggiunto alla partita${p.isNew ? ' e alla classifica' : ''}`);
+}
+
 /* --- GIOCATE DELLA SESSIONE: tutte le mani, modificabili --- */
 function openGioc() { S.sheetMin = false; S.view = 'giocate'; render(); }
 function giocHTML() {
@@ -960,6 +1024,7 @@ function cellTap(idx, i) {
     if (h.bets[i] === 'M') return toast('È il mazziere: il suo conto si fa da solo');
     w.rv = false; commit(); return setTimeout(() => flashRow(i), 50);
   }
+  if (h.bets[i] === 'X') return toast(`${G.players[i].name} non giocava in questa mano`);
   if (w.ret) return toast('Finisci prima la modifica in corso');
   if (h.stage === 'bets') return;
   if (h.stage === 'play') return editHandBets(idx, i);
