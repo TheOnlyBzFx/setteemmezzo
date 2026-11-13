@@ -194,6 +194,25 @@ textarea{width:100%;min-height:300px;font:16px/1.45 Inter,system-ui,sans-serif;b
 .hcard .hd small{color:var(--muted);font-weight:400}
 .hcard .hp{margin-top:6px;font-size:14px;line-height:1.6;color:#d8d3ca}
 .hcard .hp span{white-space:nowrap;margin-right:10px}
+.scs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.scb{appearance:none;background:transparent;border:1.5px solid;border-radius:10px;padding:7px 3px;font:700 12px/1.15 Inter,sans-serif;cursor:pointer;touch-action:manipulation}
+.scb.win{border-color:#34c27a;color:#5fd39a}
+.scb.lose{border-color:#e04a35;color:#ff8a78}
+.scb.win.on{background:#1d8a50;color:#fff}
+.scb.lose.on{background:#c0341f;color:#fff}
+.rlist2{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
+.prow{display:flex;align-items:center;gap:8px;background:#2e2e2e;border:2px solid #3d3d3d;border-radius:14px;padding:8px 8px 8px 12px}
+.prow.won{border-color:#2fa866;background:#1f3328}
+.prow.lost{border-color:#d0402c;background:#3a2320}
+.prow.flash{animation:flash 1s ease 2}
+.pnm{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
+.pe2{font-size:26px;line-height:1}
+.pnm b{display:block;font-size:22px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pnm small{display:block;font-size:12px;color:var(--muted)}
+.pval{font-family:'Patrick Hand',cursive;font-size:30px;font-weight:400;min-width:62px;text-align:right}
+.cnt.big .btn{width:46px;height:46px;font-size:26px}
+.cnt.big .cv{min-width:38px}
+.cnt.big .cv b{font-size:26px}
 .li.dealer{border-color:#6b5a2a;background:#2f2a1d;cursor:default}
 .warn{background:#3a2320;border:1px solid #7a2e24;color:#ffb4a8;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
 .ok{background:#1f3328;border:1px solid #2f6b4c;color:#a8e6c4;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
@@ -221,7 +240,7 @@ canvas#sig{width:100%;height:140px;background:#1a1a1a;border:1px dashed #666;bor
   .sheet .g3{grid-template-columns:repeat(6,1fr)}
   .sheet .g2{grid-template-columns:repeat(4,1fr)}
   .sc4{grid-template-columns:repeat(4,1fr)}
-  .rlist{display:grid;grid-template-columns:1fr 1fr}
+  .rlist,.rlist2{display:grid;grid-template-columns:1fr 1fr}
   .bigbtn{font-size:26px;padding:8px 0}
   .res{padding:9px 6px;font-size:15px}
   .res.piste{margin-top:6px;padding:8px}
@@ -372,6 +391,7 @@ function ranking() {
 function rDelta(b, r) {
   if (!r || typeof b !== 'number') return 0;
   switch (r.k) {
+    case 'N': return b * (r.n || 0);
     case 'W': case 'L': return (r.k === 'W' ? 1 : -1) * b * (r.m || 1) * (r.p ?? 1);
     case 'W2': return 2 * b; case 'W3': return 3 * b;
     case 'L2': return -2 * b * (r.p ?? 1); case 'L3': return -3 * b * (r.p ?? 1);
@@ -381,6 +401,7 @@ function rDelta(b, r) {
 }
 function rLabel(r) {
   if (!r || !r.k) return '';
+  if (r.k === 'N') { const n = r.n || 0; return n === 0 ? '0' : n === 1 ? '+' : n === -1 ? '−' : (n > 0 ? '+×' : '−×') + Math.abs(n); }
   if (r.k === 'W' || r.k === 'L') {
     let t = r.k === 'W' ? '+' : '−';
     if ((r.m || 1) > 1) t += '×' + r.m;
@@ -681,7 +702,7 @@ function confirmBets() {
   const w = G.w, h = G.hands[w.idx];
   h.bets = { ...w.draft };
   if (h.stage === 'done') {      // modifica di una mano già chiusa: ricontrolla gli esiti
-    const d = normDraft(h.res); G.players.forEach((_, i) => { if (h.bets[i] === 'M') delete d[i]; });
+    const d = normDraft(h.res, h.bets); G.players.forEach((_, i) => { if (h.bets[i] === 'M') delete d[i]; });
     G.w = { mode: 'res', idx: w.idx, draft: d, ret: w.ret };
   } else {
     h.stage = 'play';
@@ -701,55 +722,41 @@ function waitSheet() {
 }
 function startRes() { G.w = { mode: 'res', idx: G.w.idx, draft: {} }; commit(); }
 
-/* --- 3. risultati: una lista con vinto/perso, ×1/×2/×3 e piste --- */
-// converte i vecchi esiti (×2, piste vinte/perse...) nel formato nuovo
-function normRes(r) {
-  if (!r || !r.k) return r;
-  switch (r.k) {
-    case 'W2': return { k: 'W', m: 2, p: 1 }; case 'W3': return { k: 'W', m: 3, p: 1 };
-    case 'L2': return { k: 'L', m: 2, p: r.p ?? 1 }; case 'L3': return { k: 'L', m: 3, p: r.p ?? 1 };
-    case 'P': { const n = (r.w || 0) - (r.l || 0); return { k: n >= 0 ? 'W' : 'L', m: 1, p: Math.abs(n) }; }
-  }
-  return { k: r.k, m: r.m || 1, p: r.p ?? 1 };
+/* --- 3. risultati: nomi grandi + contatore (puntata × contatore) --- */
+// converte qualsiasi esito (anche dei vecchi formati) nel contatore
+function normDraft(res, bets) {
+  const d = {};
+  for (const k in (res || {})) if (res[k] && bets[k] !== 'M') d[k] = { k: 'N', n: rDelta(1, res[k]) };
+  return d;
 }
-function normDraft(res) { const d = {}; for (const k in (res || {})) if (res[k]) d[k] = normRes(res[k]); return d; }
+const SHORTCUTS = [['W', 'Vinto tutti', 1, 'win'], ['L', 'Perso tutti', -1, 'lose'], ['D', 'Double da mazzo', -2, 'lose'], ['T', 'Triple da mazzo', -3, 'lose']];
 function resSheet() {
   const w = G.w, h = G.hands[w.idx], nd = nonDealers(h), d = dealerOf(h);
-  const vh = { bets: h.bets, res: w.draft };
-  const missing = nd.some(i => !w.draft[i] || !w.draft[i].k);
-  const dd = pDelta(vh, d);
-  return `<div class="who res"><span class="we">📋</span><span><div class="wl">Risultati · mano ${w.idx + 1}</div><div class="wn">Chi ha vinto?</div></span><span class="wx">mazziere<b style="font-size:18px;font-family:Inter">${esc(G.players[d].emoji)} ${esc(G.players[d].name)}</b></span></div>
-    <div class="sc4">
-      <button class="btn allwin" onclick="allRes('W',1)">✅ Vinto tutti<small>il mazziere paga</small></button>
-      <button class="btn alllose" onclick="allRes('L',1)">❌ Perso tutti<small>il mazziere fa 7½</small></button>
-      <button class="btn alllose" onclick="allRes('L',2)">🃏 Mazziere d’emblée<small>tutti pagano ×2</small></button>
-      <button class="btn alllose" onclick="allRes('L',3)">🃏 Mazziere triplée<small>tutti pagano ×3</small></button>
-    </div>
-    <div class="legend">×2 = d’emblée · ×3 = triplée · piste = quante piste ha aperto</div>
-    <div class="rlist">${nd.map(i => {
-      const r = w.draft[i] || {}, b = h.bets[i], p = r.p ?? 1, m = r.m || 1, dl = rDelta(b, r);
-      return `<div class="rrow ${r.k === 'W' ? 'won' : r.k === 'L' ? 'lost' : ''}" id="rr${i}">
-        <div class="rtop"><span class="rn">${pn(i)} <small class="muted">· puntata ${b}</small></span><b class="rt ${r.k ? sgn(dl) : 'muted'}">${r.k ? fmt(dl) : '?'}</b></div>
-        <div class="rbot">
-          <span class="seg"><button class="${r.k === 'L' ? 'on lose' : ''}" onclick="setRes(${i},'L')">− Perso</button><button class="${r.k === 'W' ? 'on win' : ''}" onclick="setRes(${i},'W')">+ Vinto</button></span>
-          <span class="seg mult">${[1, 2, 3].map(x => `<button class="${m === x ? 'on' : ''}" onclick="setMult(${i},${x})">×${x}</button>`).join('')}</span>
-          <span class="cnt"><button class="btn" onclick="setP(${i},-1)" ${p <= 0 ? 'disabled' : ''}>−</button><span class="cv"><b>${p}</b><small>${p === 1 ? 'pista' : 'piste'}</small></span><button class="btn" onclick="setP(${i},1)">+</button></span>
-        </div></div>`;
-    }).join('')}</div>
-    <div class="li dealer"><span>${pn(d)} <small class="muted">· 🃏 mazziere</small></span><b class="${missing ? '' : sgn(dd)}">${missing ? '…' : fmt(dd)}</b></div>
-    ${missing ? `<div class="warn">Scegli Vinto o Perso per tutti i giocatori</div>` : `<div class="ok">Il mazziere ${dd >= 0 ? 'incassa' : 'paga'} ${Math.abs(dd)} · la mano fa somma zero ✓</div>`}
-    <button class="btn primary big" ${missing ? 'disabled' : ''} onclick="confirmRes()">✓ Conferma calcoli</button>
+  nd.forEach(i => { if (!w.draft[i] || w.draft[i].k !== 'N') w.draft[i] = { k: 'N', n: w.draft[i] ? rDelta(1, w.draft[i]) : 0 }; });
+  const vh = { bets: h.bets, res: w.draft }, dd = pDelta(vh, d);
+  const dealerRow = `<div class="li dealer"><span>${pn(d)} <small class="muted">· 🃏 mazziere</small></span><b class="${sgn(dd)}">${fmt(dd)}</b></div>`;
+  if (w.rv) {   // riepilogo
+    return `<h3>Riepilogo · mano ${w.idx + 1}</h3>
+      <div class="list">${nd.map(i => { const n = w.draft[i].n, b = h.bets[i], dl = n * b;
+        return `<button class="li" onclick="G.w.rv=false;commit();setTimeout(()=>flashRow(${i}),50)"><span>${pn(i)} <small class="muted">· ${b} × ${fmt(n)}</small></span><b class="${sgn(dl)}">${fmt(dl)}</b><span class="ed">✏️</span></button>`; }).join('')}
+        ${dealerRow}</div>
+      <div class="ok">Il mazziere ${dd >= 0 ? 'incassa' : 'paga'} ${Math.abs(dd)} · la mano fa somma zero ✓</div>
+      <button class="btn primary big" onclick="confirmRes()">✓ Conferma calcoli</button>
+      <div class="row"><button class="btn sm" onclick="G.w.rv=false;commit()">◀ Modifica</button>${cancelBtn()}</div>`;
+  }
+  return `<div class="scs">${SHORTCUTS.map(([key, label, n, c]) => `<button class="scb ${c} ${w.sc === key ? 'on' : ''}" onclick="allN('${key}',${n})">${label}</button>`).join('')}</div>
+    <div class="rlist2">${nd.map(i => { const n = w.draft[i].n, b = h.bets[i], dl = n * b;
+      return `<div class="prow ${n > 0 ? 'won' : n < 0 ? 'lost' : ''}" id="rr${i}">
+        <span class="pnm"><span class="pe2">${esc(G.players[i].emoji)}</span><span><b>${esc(G.players[i].name)}</b><small>puntata ${b}</small></span></span>
+        <b class="pval ${sgn(dl)}">${fmt(dl)}</b>
+        <span class="cnt big"><button class="btn" onclick="setCnt(${i},-1)">−</button><span class="cv"><b class="${sgn(n)}">${fmt(n)}</b></span><button class="btn" onclick="setCnt(${i},1)">+</button></span>
+      </div>`; }).join('')}</div>
+    ${dealerRow}
+    <button class="btn primary big" onclick="G.w.rv=true;commit()">Riepilogo ▶</button>
     <div class="row">${!w.ret ? `<button class="btn sm ghost" onclick="G.w={mode:'wait',idx:G.w.idx};commit()">◀ Torna alle puntate</button>` : ''}${cancelBtn()}</div>`;
 }
-const rget = i => (G.w.draft[i] = G.w.draft[i] || { m: 1, p: 1 });
-function setRes(i, k) { rget(i).k = k; commit(); }
-function setMult(i, m) { rget(i).m = m; commit(); }
-function setP(i, d) { const r = rget(i); r.p = Math.max(0, Math.min(13, (r.p ?? 1) + d)); commit(); }
-function allRes(k, m) {
-  const w = G.w;
-  nonDealers(G.hands[w.idx]).forEach(i => { const r = rget(i); r.k = k; r.m = m; });
-  commit();
-}
+function setCnt(i, d) { const r = G.w.draft[i]; r.n = Math.max(-39, Math.min(39, (r.n || 0) + d)); commit(); }
+function allN(key, n) { const w = G.w; nonDealers(G.hands[w.idx]).forEach(i => w.draft[i] = { k: 'N', n }); w.sc = key; commit(); }
 function confirmRes() {
   const w = G.w, h = G.hands[w.idx];
   h.res = { ...w.draft }; h.stage = 'done';
@@ -829,7 +836,7 @@ function editHandBets(idx, pi) {
 }
 function editHandRes(idx, pi) {
   const k = pi == null ? 0 : nonDealers(G.hands[idx]).indexOf(pi);
-  G.w = { mode: 'res', idx, draft: normDraft(G.hands[idx].res), ret: { ...G.w } };
+  G.w = { mode: 'res', idx, draft: normDraft(G.hands[idx].res, G.hands[idx].bets), ret: { ...G.w } };
   commit();
   if (pi != null) setTimeout(() => flashRow(pi), 50);
 }
@@ -847,7 +854,7 @@ function cellTap(idx, i) {
   }
   if (w.idx === idx && w.mode === 'res') {
     if (h.bets[i] === 'M') return toast('È il mazziere: il suo conto si fa da solo');
-    render(); return flashRow(i);
+    w.rv = false; commit(); return setTimeout(() => flashRow(i), 50);
   }
   if (w.ret) return toast('Finisci prima la modifica in corso');
   if (h.stage === 'bets') return;
