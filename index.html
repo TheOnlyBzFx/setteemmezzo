@@ -519,9 +519,9 @@ function homeHTML() {
     <button class="btn big" onclick="startLoad()">📝 Carica risultati<small>conti già fatti sul foglio → classifica FISM</small></button>
     <button class="btn big" onclick="startMsg()">📋 Aggiorna da messaggio WhatsApp<small>incolla la classifica del gruppo → database</small></button>
     <div class="rankhead"><h2>🏆 Classifica FISM</h2><span class="sync">${syncTxt}${pend ? ` · ${pend} sessione da inviare` : ''}</span></div>
-    <button class="btn sm wa" onclick="shareRanking()">📲 Condividi la classifica su WhatsApp</button>
     <ol class="rank">${r.map((p, i) => `<li><span class="pos">${i + 1}</span><span class="em">${esc(p.emoji)}</span><span class="nm">${esc(p.name)}</span><span class="sc ${sgn(p.score)}">${fmt(p.score)}</span></li>`).join('')}</ol>
-    <button class="btn big" style="margin-top:16px" onclick="openHistList()">📜 Storico partite<small>tutte le partite salvate · grafico · modifica</small></button>
+    <button class="btn wa big" style="margin-top:16px" onclick="shareRanking()">📲 Condividi la classifica su WhatsApp</button>
+    <button class="btn big" onclick="openHistList()">📜 Storico partite<small>tutte le partite salvate · grafico · modifica</small></button>
   </div></div>`;
 }
 function askType() {
