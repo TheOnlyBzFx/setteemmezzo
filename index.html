@@ -1368,12 +1368,13 @@ const isGame = r => !r.fonte || r.fonte === 'foglio';
 // gasometro: differenza tra chi ha vinto di più e chi ha perso di più
 function gasOf(r) { const v = Object.values(r.deltas || {}).map(Number); return v.length ? Math.max(...v) - Math.min(...v) : 0; }
 function gasLevel(g) {
-  if (g < 150) return ['😴 Moscia', '#8a8780'];
-  if (g < 350) return ['🙂 Tranquilla', '#c98500'];
-  if (g < 600) return ['🔥 Gasata', '#d95926'];
-  return ['🚀 Gasatissima', '#e0442f'];
+  if (g < 450) return ['😴 Moscia', '#8a8780'];
+  if (g < 1200) return ['🙂 Tranquilla', '#c98500'];
+  if (g < 2000) return ['🔥 Gasata', '#d95926'];
+  if (g < 3000) return ['🚀 Gasatissima', '#e0442f'];
+  return ['💥 GAS AL MASSIMO', '#ff2d1a'];
 }
-function gasMax() { return 1000; }   // scala fissa: oltre 1000 la lancetta resta a fondo scala
+function gasMax() { return 3000; }   // gas al massimo = 3000 di differenza tra primo e ultimo della partita
 function miniGas(r) {
   const g = gasOf(r), [lab, col] = gasLevel(g), pct = Math.min(100, g / gasMax() * 100);
   return `<div class="mgas">⛽<span class="bar"><i style="width:${pct}%;background:${col}"></i></span><span>${lab} · ${g}</span></div>`;
@@ -1382,7 +1383,7 @@ function gaugeSVG(g) {
   const max = gasMax(), [lab, col] = gasLevel(g), f = Math.min(1, g / max);
   const cx = 150, cy = 140, R = 110, pt = a => [cx - R * Math.cos(a), cy - R * Math.sin(a)];
   const arc = (a0, a1, c) => { const [x0, y0] = pt(a0), [x1, y1] = pt(a1); return `<path d="M${x0} ${y0} A${R} ${R} 0 0 1 ${x1} ${y1}" stroke="${c}" stroke-width="18" fill="none"/>`; };
-  const zones = [[0, 150, '#5a5853'], [150, 350, '#c98500'], [350, 600, '#d95926'], [600, max, '#e0442f']]
+  const zones = [[0, 450, '#5a5853'], [450, 1200, '#c98500'], [1200, 2000, '#d95926'], [2000, max, '#e0442f']]
     .filter(([a]) => a < max).map(([a, b, c]) => arc(Math.PI * a / max + .01, Math.PI * Math.min(b, max) / max - .01, c)).join('');
   return `<svg viewBox="0 0 300 160" role="img" aria-label="Gasometro: ${lab}, ${g} punti di differenza">
     ${zones}
