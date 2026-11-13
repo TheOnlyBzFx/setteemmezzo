@@ -134,6 +134,8 @@ td.cur.hl-res{background:rgba(127,217,255,.18)!important}
 .lrow input{width:96px;text-align:right;font-family:'Patrick Hand',cursive;font-size:22px;padding:8px 10px}
 .loadbar{position:sticky;bottom:0;background:var(--panel);border-top:1px solid #444;padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px}
 .loadbar .sum{flex:1;font-size:15px}
+textarea{width:100%;min-height:300px;font:16px/1.45 Inter,system-ui,sans-serif;background:#2b2b2b;color:var(--chalk);border:1px solid #474747;border-radius:12px;padding:12px;resize:vertical}
+.chg{font-size:13px;margin-left:6px}
 .prog{color:var(--muted);font-size:13px;padding-top:3px}
 .grid{display:grid;gap:8px}
 .g3{grid-template-columns:repeat(3,1fr)}
@@ -342,7 +344,13 @@ function pDelta(h, i) {
   return rDelta(b, h.res[i]);
 }
 const dealerOf = h => G.players.findIndex((_, i) => h.bets[i] === 'M');
-const nonDealers = h => G.players.map((_, i) => i).filter(i => h.bets[i] !== 'M');
+// ordine di gioco: si parte dal giocatore a destra del mazziere (colonna dopo) e si gira
+function playOrder(bets) {
+  const n = G.players.length, d = G.players.findIndex((_, k) => bets[k] === 'M');
+  if (d < 0) return [...Array(n).keys()];
+  return Array.from({ length: n - 1 }, (_, k) => (d + 1 + k) % n);
+}
+const nonDealers = h => playOrder(h.bets);
 function totals() { return G.players.map((_, i) => G.hands.reduce((s, h) => s + (h.stage === 'done' ? pDelta(h, i) : 0), 0)); }
 
 /* ---------- stato ---------- */
@@ -372,6 +380,8 @@ function render() {
   else if (S.view === 'summary' && G) a.innerHTML = summaryHTML();
   else if (S.view === 'load') { a.innerHTML = loadHTML(); updLoadSum(); }
   else if (S.view === 'loaded') a.innerHTML = loadedHTML();
+  else if (S.view === 'msg') a.innerHTML = msgHTML();
+  else if (S.view === 'msgdone') a.innerHTML = msgDoneHTML();
   else { S.view = 'home'; a.innerHTML = homeHTML(); }
 }
 function goHome() { S.view = 'home'; render(); }
@@ -388,6 +398,7 @@ function homeHTML() {
       <small>${G.type === 'fism' ? '🏆 Ufficiale FISM' : '🤙 A cazz de cane'} · ${G.players.length} giocatori · mano ${G.hands.length}</small></button>` : ''}
     <button class="btn primary big" onclick="askType()">🃏 Nuova partita</button>
     <button class="btn big" onclick="startLoad()">📝 Carica risultati<small>conti già fatti sul foglio → classifica FISM</small></button>
+    <button class="btn big" onclick="startMsg()">📋 Aggiorna da messaggio WhatsApp<small>incolla la classifica del gruppo → database</small></button>
     <div class="rankhead"><h2>🏆 Classifica FISM</h2><span class="sync">${syncTxt}${pend ? ` · ${pend} sessione da inviare` : ''}</span></div>
     <button class="btn sm wa" onclick="shareRanking()">📲 Condividi la classifica su WhatsApp</button>
     <ol class="rank">${r.map((p, i) => `<li><span class="pos">${i + 1}</span><span class="em">${esc(p.emoji)}</span><span class="nm">${esc(p.name)}</span><span class="sc ${sgn(p.score)}">${fmt(p.score)}</span></li>`).join('')}</ol>
@@ -477,7 +488,8 @@ function tableHTML() {
     const vh = viewHand(idx), editing = G.w.idx === idx && (G.w.mode === 'bets' || G.w.mode === 'res');
     if (h.stage === 'done') P.forEach((_, i) => run[i] += pDelta(h, i));
     const showRun = h.stage === 'done' && !editing;
-    const curCol = editing && !G.w.review && G.w.piste == null ? (G.w.mode === 'bets' ? G.w.i : nonDealers(h)[G.w.i]) : -1;
+    const choosingDealer = G.w.mode === 'bets' && !G.w.single && !Object.values(G.w.draft).includes('M');
+    const curCol = editing && !G.w.review && G.w.piste == null && !choosingDealer ? (G.w.mode === 'bets' ? G.w.i : nonDealers(h)[G.w.i]) : -1;
     const resComplete = nonDealers(vh).every(i => vh.res[i]);
     if (curCol >= 0) hlCol = curCol;
     body += `<tr class="${editing ? 'draft' : ''}" data-h="${idx}"><td class="n" onclick="handMenu(${idx})">${idx + 1}</td>` + P.map((_, i) => {
@@ -530,30 +542,38 @@ const cancelBtn = () => G.w.ret ? `<button class="btn sm ghost" onclick="cancelE
 /* --- 1. puntate --- */
 function betsSheet() {
   const w = G.w, P = G.players;
+  if (!w.review && !w.single && !Object.values(w.draft).includes('M')) {
+    // primo passo del mazzo: si sceglie il mazziere
+    return `<div class="who"><span class="we">🃏</span><span><div class="wl">Mano ${w.idx + 1} · nuovo mazzo</div><div class="wn">Chi fa il mazziere?</div></span></div>
+      <div class="grid g2">${P.map((p, k) => `<button class="btn" style="padding:14px 8px;font-size:17px" onclick="pickDealer(${k})">${esc(p.emoji)} ${esc(p.name)}</button>`).join('')}</div>
+      <div class="row">${cancelBtn()}</div>`;
+  }
   if (!w.review) {
     const i = w.i;
     const dIdx = P.findIndex((_, k) => w.draft[k] === 'M' && k !== i);
     const dealerTaken = dIdx >= 0;
     const prev = w.idx > 0 ? G.hands[w.idx - 1] : null;
-    const order = P.map((_, k) => k).filter(k => k === i || w.draft[k] !== 'M');
+    const order = playOrder(w.draft), pos = order.indexOf(i);
     const first = betStep(-1, 1) === i;
     const onlyDealer = Object.keys(w.draft).every(k => w.draft[k] === 'M');
     return `${dealerTaken && !w.single ? `<div class="glob"><span class="lbl">🃏 Mazziere: <b>${pn(dIdx)}</b> · resta lui fino alla matta</span></div>` : ''}
-      <div class="who"><span class="we">${esc(P[i].emoji)}</span><span><div class="wl">🎯 Puntata di</div><div class="wn">${esc(P[i].name)}</div></span><span class="wx">mano ${w.idx + 1}<b>${order.indexOf(i) + 1}/${order.length}</b></span></div>
+      <div class="who"><span class="we">${esc(P[i].emoji)}</span><span><div class="wl">🎯 Puntata di</div><div class="wn">${esc(P[i].name)}</div></span><span class="wx">mano ${w.idx + 1}<b>${pos >= 0 ? `${pos + 1}/${order.length}` : ''}</b></span></div>
       <div class="grid g3">${[10, 20, 30, 40, 50].map(v => `<button class="btn bigbtn ${w.draft[i] === v ? 'sel' : ''}" onclick="pickBet(${v})">${v}</button>`).join('')}
         <button class="btn bigbtn dealer ${w.draft[i] === 'M' ? 'sel' : ''}" ${dealerTaken ? 'disabled' : ''} onclick="pickBet('M')">🃏 Mazziere</button></div>
       <div class="row">
         ${!first && !w.single ? `<button class="btn sm ghost" onclick="betNav(-1)">◀ Indietro</button>` : ''}
         ${w.single ? `<button class="btn sm ghost" onclick="toReview()">${backLabel()}</button>` : ''}
         ${first && !w.single && prev && prev.stage === 'done' && !G.cuts[w.idx - 1] && onlyDealer && dealerOf(prev) === (dealerTaken ? dIdx : dealerOf(prev)) ? `<button class="btn sm" onclick="copyPrevBets()">↺ Stesse puntate della mano ${w.idx}</button>` : ''}
+        ${dealerTaken && !w.single && !w.ret ? `<button class="btn sm ghost" onclick="changeDealer()">🃏 Cambia mazziere</button>` : ''}
         ${cancelBtn()}
       </div>`;
   }
   const dealers = P.map((_, i) => i).filter(i => w.draft[i] === 'M');
+  const rOrder = dealers.length === 1 ? [dealers[0], ...playOrder(w.draft)] : P.map((_, i) => i);
   const missing = P.some((_, i) => w.draft[i] === undefined);
   const err = missing ? 'Manca qualche puntata' : dealers.length !== 1 ? (dealers.length ? 'C’è più di un mazziere' : 'Manca il mazziere: toccane uno e scegli 🃏 Mazziere') : '';
   return `<h3>Controlla le puntate · mano ${w.idx + 1}</h3>
-    <div class="list">${P.map((_, i) => `<button class="li" onclick="editBet(${i})"><span>${pn(i)}</span><b>${w.draft[i] === undefined ? '—' : w.draft[i] === 'M' ? '🃏 Mazziere' : w.draft[i]}</b><span class="ed">✏️</span></button>`).join('')}</div>
+    <div class="list">${rOrder.map(i => `<button class="li" onclick="editBet(${i})"><span>${pn(i)}</span><b>${w.draft[i] === undefined ? '—' : w.draft[i] === 'M' ? '🃏 Mazziere' : w.draft[i]}</b><span class="ed">✏️</span></button>`).join('')}</div>
     ${err ? `<div class="warn">${err}</div>` : ''}
     <button class="btn primary big" ${err ? 'disabled' : ''} onclick="confirmBets()">✓ Conferma puntate</button>
     <div class="row">${cancelBtn()}</div>`;
@@ -569,9 +589,22 @@ function pickBet(v) {
 }
 // prossimo/precedente giocatore che deve puntare (salta il mazziere già scelto)
 function betStep(from, dir) {
+  const seq = playOrder(G.w.draft);
+  if (from < 0) return dir > 0 ? (seq[0] ?? -1) : -1;
+  const pos = seq.indexOf(from);
+  if (pos < 0) return dir > 0 ? (seq[0] ?? -1) : -1;
+  return seq[pos + dir] ?? -1;
+}
+function pickDealer(d) {
   const w = G.w;
-  for (let k = from + dir; k >= 0 && k < G.players.length; k += dir) if (w.draft[k] !== 'M') return k;
-  return -1;
+  for (const k in w.draft) if (w.draft[k] === 'M') delete w.draft[k];
+  w.draft[d] = 'M'; w.i = betStep(-1, 1); w.review = false;
+  commit();
+}
+function changeDealer() {
+  const w = G.w;
+  for (const k in w.draft) if (w.draft[k] === 'M') delete w.draft[k];
+  commit();
 }
 function betNav(d) { const k = betStep(G.w.i, d); if (k >= 0) G.w.i = k; commit(); }
 function editBet(i) { Object.assign(G.w, { i, single: true, review: false }); commit(); }
@@ -954,6 +987,83 @@ function loadedHTML() {
               : `<div class="ok">✅ Salvati nella classifica FISM${SYNC === 'local' ? ' (su questo telefono)' : ''}</div>`}
     <button class="btn wa big" onclick="shareLoaded()">📲 Condividi su WhatsApp</button>
     <button class="btn primary big" onclick="S.loaded=null;goHome()">🏠 Torna all’inizio</button>
+  </div></div>`;
+}
+
+/* ===== AGGIORNA CLASSIFICA DA MESSAGGIO WHATSAPP ===== */
+function startMsg() { S.msg = { text: S.msg?.text || '' }; S.view = 'msg'; render(); }
+function msgHTML() {
+  return `<header class="top"><button class="btn sm ghost" onclick="goHome()">←</button><div class="title">📋 Aggiorna da messaggio <small>🏆 FISM</small></div></header>
+  <div class="scroll"><div class="load" style="padding-bottom:40px">
+    <p class="muted" style="margin-top:0">Copia da WhatsApp il messaggio con la classifica aggiornata e incollalo qui sotto. Una riga a testa, come <b>Kiuppa 🍑 +320</b>.</p>
+    <textarea id="msgTxt" placeholder="Kiuppa 🍑 +320&#10;Capitano 👨‍✈️ -480&#10;Giugi 🏳️ -70&#10;…" oninput="S.msg.text=this.value">${esc(S.msg.text)}</textarea>
+    <div class="row"><button class="btn sm" onclick="pasteMsg()">📋 Incolla dagli appunti</button><button class="btn sm ghost" onclick="S.msg.text='';render()">Svuota</button></div>
+    <button class="btn primary big" onclick="checkMsg()">Controlla ▶</button>
+  </div></div>`;
+}
+async function pasteMsg() {
+  try { const t = await navigator.clipboard.readText(); if (t) { S.msg.text = t; render(); } else toast('Gli appunti sono vuoti'); }
+  catch (e) { toast('Tieni premuto nel riquadro e scegli Incolla'); }
+}
+function parseMsg(txt) {
+  const g = allPlayers(), rows = [], bad = [], seen = {};
+  for (let line of txt.split(/\r?\n/)) {
+    line = line.replace(/^\s*\[[^\]]*\]\s*[^:]{1,40}:\s*/, '').replace(/\*/g, '').replace(/^\s*\d+[.)]\s+/, '').trim();
+    if (!line) continue;
+    const m = line.match(/^(.*?)([+\-−–]?)\s*(\d+)\s*$/);
+    if (!m || !/\p{L}/u.test(m[1])) { if (/\p{L}/u.test(line)) bad.push(line); continue; }
+    const label = m[1].replace(/[🥇🥈🥉]/gu, '').trim();
+    const name = label.replace(/[^\p{L}\p{N}\s'.]/gu, '').replace(/\s+/g, ' ').trim();
+    const emoji = label.replace(/[\p{L}\p{N}\s'.]/gu, '').trim();
+    const id = slug(name);
+    const score = parseInt(m[3], 10) * (/[\-−–]/.test(m[2]) ? -1 : 1);
+    if (seen[id]) { bad.push(line + '  ← nome ripetuto'); continue; }
+    seen[id] = true;
+    rows.push({ id, name: g[id]?.name || name, emoji: g[id]?.emoji || emoji || '🃏', isNew: !g[id], score });
+  }
+  return { rows, bad };
+}
+function checkMsg() {
+  const txt = ($('#msgTxt')?.value ?? S.msg.text); S.msg.text = txt;
+  const { rows, bad } = parseMsg(txt);
+  if (!rows.length) return toast('Non trovo righe tipo "Nome emoji +punti"');
+  const cur = {}; ranking().forEach(r => cur[r.id] = r);
+  const inMsg = new Set(rows.map(r => r.id));
+  const missing = Object.values(cur).filter(r => !inMsg.has(r.id));
+  const changes = rows.map(r => ({ ...r, old: cur[r.id]?.score ?? 0 })).filter(r => r.isNew || r.score !== r.old);
+  const finalSum = rows.reduce((a, r) => a + r.score, 0) + missing.reduce((a, r) => a + r.score, 0);
+  S.msg.pending = { changes };
+  const okSum = finalSum === 0;
+  modal(`<h3>📋 Controllo del messaggio</h3>
+    <p>${rows.length} giocatori letti · ${changes.length ? `<b>${changes.length}</b> da aggiornare` : 'nessuna differenza'}</p>
+    ${changes.length ? `<ol class="rank">${changes.map(c => `<li><span class="em">${esc(c.emoji)}</span><span class="nm">${esc(c.name)}${c.isNew ? ' <small class="muted">(nuovo)</small>' : ''}<span class="sub">${fmt(c.old)} →</span></span><span class="sc ${sgn(c.score)}">${fmt(c.score)}</span></li>`).join('')}</ol>` : `<div class="ok">La classifica nel database è già uguale al messaggio ✓</div>`}
+    ${missing.length ? `<div class="warn">Non sono nel messaggio e restano come sono: ${missing.map(r => `${esc(r.emoji)} ${esc(r.name)} ${fmt(r.score)}`).join(', ')}</div>` : ''}
+    ${bad.length ? `<div class="warn">Righe che non ho capito (ignorate):<br>${bad.map(esc).join('<br>')}</div>` : ''}
+    <div class="${okSum ? 'ok' : 'warn'}">Somma della classifica: ${okSum ? '0 · i conti tornano ✓' : `${fmt(finalSum)} ⚠️ non fa zero: c’è un errore nel messaggio`}</div>
+    ${changes.length ? `<button class="btn ${okSum ? 'primary' : 'red'}" onclick="closeModal();saveMsg()">${okSum ? '✓ Aggiorna la classifica' : 'Aggiorna comunque'}</button>` : ''}
+    <button class="btn" onclick="closeModal()">◀ ${changes.length ? 'Correggi' : 'Chiudi'}</button>`);
+}
+function saveMsg() {
+  const ch = S.msg.pending?.changes || []; if (!ch.length) return;
+  const deltas = {}, nuovi = {};
+  ch.forEach(c => { deltas[c.id] = c.score - c.old; if (c.isNew) nuovi[c.id] = { name: c.name, emoji: c.emoji, base: 0, order: 999 }; });
+  const id = 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const pend = LS.get('sem_pending', []);
+  pend.push({ id, date: new Date().toISOString(), type: 'fism', fonte: 'messaggio', mani: null, deltas, nuovi, giocatori: ch.map(c => c.name) });
+  LS.set('sem_pending', pend);
+  S.msgDone = { id, changes: ch }; S.msg = null; S.view = 'msgdone'; render();
+  flushPending().then(render);
+}
+function msgDoneHTML() {
+  const D = S.msgDone, pending = LS.get('sem_pending', []).some(x => x.id === D.id);
+  return `<header class="top"><div class="logo">7½</div><div class="title">${pending ? '⏳ Da inviare' : '✅ Classifica aggiornata'}</div></header>
+  <div class="scroll"><div class="home">
+    ${pending ? `<div class="warn">⏳ Non ancora salvata (manca la connessione?). Resta in memoria e riprovo in automatico.</div><button class="btn" onclick="flushPending().then(render)">Riprova ora</button>`
+              : `<div class="ok" style="font-size:16px">✅ La classifica è stata aggiornata${SYNC === 'local' ? ' (su questo telefono)' : ''}</div>`}
+    <p class="muted">Giocatori aggiornati:</p>
+    <ol class="rank">${D.changes.map(c => `<li><span class="em">${esc(c.emoji)}</span><span class="nm">${esc(c.name)}<span class="sub">${fmt(c.old)} →</span></span><span class="sc ${sgn(c.score)}">${fmt(c.score)}</span></li>`).join('')}</ol>
+    <button class="btn wa big" onclick="shareRanking()">📲 Condividi su WhatsApp</button>
+    <button class="btn primary big" onclick="S.msgDone=null;goHome()">🏠 Torna all’inizio</button>
   </div></div>`;
 }
 
