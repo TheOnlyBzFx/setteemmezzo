@@ -213,6 +213,21 @@ textarea{width:100%;min-height:300px;font:16px/1.45 Inter,system-ui,sans-serif;b
 .cnt.big .btn{width:46px;height:46px;font-size:26px}
 .cnt.big .cv{min-width:38px}
 .cnt.big .cv b{font-size:26px}
+.gtot{display:flex;flex-wrap:wrap;gap:6px 12px;background:#141414;border:1px solid #333;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:15px}
+.gtot span{white-space:nowrap}
+.gcard{background:#262626;border:1px solid #3a3a3a;border-radius:14px;padding:10px 12px;margin-bottom:10px}
+.gcard.cur{border-color:var(--gold)}
+.gh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+.gh b{font-size:17px}
+.gh span{font-size:13px;color:var(--muted)}
+table.gt{width:100%;border-collapse:collapse;font-size:15px}
+table.gt td{padding:5px 4px;border-top:1px solid #333}
+table.gt td.v{font-family:'Patrick Hand',cursive;font-size:21px;text-align:right;white-space:nowrap}
+table.gt td.b{color:var(--muted);text-align:center;white-space:nowrap}
+table.gt td.e{color:var(--red);text-align:center;font-family:'Patrick Hand',cursive;font-size:18px}
+table.gt tr.dl td{color:var(--gold)}
+.gcut{display:flex;align-items:center;gap:8px;margin:4px 0 14px;color:var(--muted);font-size:13px}
+.gcut:before,.gcut:after{content:'';flex:1;border-top:3px solid var(--chalk)}
 .li.dealer{border-color:#6b5a2a;background:#2f2a1d;cursor:default}
 .warn{background:#3a2320;border:1px solid #7a2e24;color:#ffb4a8;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
 .ok{background:#1f3328;border:1px solid #2f6b4c;color:#a8e6c4;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
@@ -451,6 +466,7 @@ function render() {
   else if (S.view === 'setup') a.innerHTML = setupHTML();
   else if (S.view === 'game' && G) { a.innerHTML = gameHTML(); afterGameRender(); }
   else if (S.view === 'summary' && G) a.innerHTML = summaryHTML();
+  else if (S.view === 'giocate' && G) { a.innerHTML = giocHTML(); const sc = $('#gsc'); if (sc) sc.scrollTop = sc.scrollHeight; }
   else if (S.view === 'load') { a.innerHTML = loadHTML(); updLoadSum(); }
   else if (S.view === 'loaded') a.innerHTML = loadedHTML();
   else if (S.view === 'msg') a.innerHTML = msgHTML();
@@ -459,7 +475,7 @@ function render() {
   else if (S.view === 'msgdone') a.innerHTML = msgDoneHTML();
   else { S.view = 'home'; a.innerHTML = homeHTML(); }
 }
-function goHome() { S.view = 'home'; render(); }
+function goHome() { S.view = 'home'; S.toGioc = false; render(); }
 function resume() { S.view = G.ended ? 'summary' : 'game'; render(); }
 
 /* ===== HOME ===== */
@@ -551,6 +567,7 @@ function gameHTML() {
   <div class="sheet ${S.sheetMin ? 'min' : ''}" id="sheet"><button class="sheet-toggle" onclick="toggleSheet()">${S.sheetMin ? '▲ Riapri il pannello' : '▼ Guarda la tabella'}</button>${sheetHTML()}</div></div>`;
   return `<header class="top"><button class="btn sm ghost" onclick="goHome()">←</button>
     <div class="title">Mano ${G.w.idx + 1}<small>${G.type === 'fism' ? '🏆 FISM' : '🤙 a cazz de cane'}</small></div>
+    <button class="btn sm" onclick="openGioc()">📜 Giocate</button>
     <button class="btn sm red" onclick="askEnd()">FINE SESSIONE</button></header>
   <div class="gbody"><div class="tw" id="tw">${tableHTML()}</div>
   <div class="sheet ${S.sheetMin ? 'min' : ''}" id="sheet"><button class="sheet-toggle" onclick="toggleSheet()">${S.sheetMin ? '▲ Riapri ' + ({ bets: 'le puntate', res: 'i risultati' }[G.w.mode] || 'il pannello') : '▼ Guarda la tabella'}</button>${sheetHTML()}</div></div>`;
@@ -707,10 +724,12 @@ function confirmBets() {
   } else {
     h.stage = 'play';
     G.w = w.ret || { mode: 'wait', idx: w.idx };
+    backGioc();
   }
   commit();
 }
-function cancelEdit() { if (G.w.ret) { G.w = G.w.ret; commit(); } }
+function cancelEdit() { if (G.w.ret) { G.w = G.w.ret; backGioc(); commit(); } }
+function backGioc() { if (S.toGioc) { S.toGioc = false; S.view = 'giocate'; } }
 
 /* --- 2. mano in gioco --- */
 function waitSheet() {
@@ -761,6 +780,7 @@ function confirmRes() {
   const w = G.w, h = G.hands[w.idx];
   h.res = { ...w.draft }; h.stage = 'done';
   G.w = w.ret || { mode: 'after', idx: w.idx };
+  backGioc();
   commit();
 }
 
@@ -815,6 +835,62 @@ function doSign() {
   G.cuts[G.w.idx] = { signer: G.players[si].name, sig: out.toDataURL('image/png'), t: Date.now() };
   nextHand(false);
   toast('Mazzo firmato ✍️ Si rimischia!');
+}
+
+/* --- GIOCATE DELLA SESSIONE: tutte le mani, modificabili --- */
+function openGioc() { S.sheetMin = false; S.view = 'giocate'; render(); }
+function giocHTML() {
+  const P = G.players, tot = totals();
+  const cards = G.hands.map((h, idx) => {
+    const cur = idx === G.w.idx && h.stage !== 'done';
+    const bets = cur && G.w.mode === 'bets' ? G.w.draft : h.bets;
+    const d = P.findIndex((_, k) => bets[k] === 'M');
+    const order = d >= 0 ? playOrder(bets) : P.map((_, k) => k);
+    const done = h.stage === 'done';
+    const rows = order.map(i => {
+      const b = bets[i], r = h.res[i];
+      return `<tr><td>${pn(i)}</td><td class="b">${b ?? '—'}</td><td class="e">${done ? rLabel(r) : ''}</td><td class="v ${done ? sgn(pDelta(h, i)) : 'muted'}">${done ? fmt(pDelta(h, i)) : ''}</td></tr>`;
+    }).join('');
+    const drow = d >= 0 ? `<tr class="dl"><td>${pn(d)}</td><td class="b">🃏 mazz.</td><td></td><td class="v ${done ? sgn(pDelta(h, d)) : ''}">${done ? fmt(pDelta(h, d)) : ''}</td></tr>` : '';
+    const canEdit = !cur && !G.w.ret && h.stage !== 'bets';
+    return `<div class="gcard ${cur ? 'cur' : ''}">
+      <div class="gh"><b>Mano ${idx + 1}</b><span>${cur ? '⏳ in corso' : done ? '✓ chiusa' : 'puntate fatte'}</span></div>
+      <table class="gt">${drow}${rows}</table>
+      ${canEdit ? `<div class="row">
+        <button class="btn sm" onclick="giocEdit(${idx},'bets')">✏️ Puntate</button>
+        ${done ? `<button class="btn sm" onclick="giocEdit(${idx},'res')">✏️ Risultati</button>` : ''}
+        ${done ? `<button class="btn sm ghost" onclick="delHandAt(${idx})">🗑 Elimina</button>` : ''}</div>` : ''}
+    </div>${G.cuts[idx] ? `<div class="gcut">🃏 matta · firmato da ${esc(G.cuts[idx].signer)}</div>` : ''}`;
+  }).join('');
+  return `<header class="top"><button class="btn sm ghost" onclick="S.view='game';render()">←</button><div class="title">📜 Giocate della sessione<small>${G.hands.filter(h => h.stage === 'done').length} mani</small></div>
+    <button class="btn sm primary" onclick="S.view='game';render()">Torna alla partita</button></header>
+  <div class="scroll" id="gsc"><div class="home">
+    <div class="gtot">${P.map((p, i) => `<span>${esc(p.emoji)} ${esc(p.name)} <b class="${sgn(tot[i])}">${fmt(tot[i])}</b></span>`).join('')}</div>
+    ${G.w.ret ? `<div class="warn">C’è una modifica in corso: finiscila nella partita prima di modificare altre mani.</div>` : ''}
+    ${cards}
+  </div></div>`;
+}
+function giocEdit(idx, what) {
+  if (G.w.ret) return toast('Finisci prima la modifica in corso');
+  S.toGioc = true; S.view = 'game';
+  if (what === 'bets') editHandBets(idx); else editHandRes(idx);
+}
+function delHandAt(idx) {
+  if (G.w.ret) return toast('Finisci prima la modifica in corso');
+  confirmModal(`Eliminare la mano ${idx + 1}?`, 'Puntate e risultati di questa mano vengono tolti dalla sessione. Non si può annullare.', '🗑 Elimina mano', () => {
+    G.hands.splice(idx, 1);
+    const nc = {};
+    Object.entries(G.cuts).forEach(([k, c]) => { let n = +k; if (n === idx) n = idx - 1; else if (n > idx) n--; if (n >= 0 && !nc[n]) nc[n] = c; });
+    G.cuts = nc;
+    if (G.w.idx > idx) G.w.idx--;
+    else if (G.w.idx === idx) {   // era l'ultima mano chiusa
+      const last = G.hands.length - 1;
+      if (last < 0) { G.hands = [{ bets: {}, res: {}, stage: 'bets' }]; G.w = { mode: 'bets', idx: 0, i: 0, draft: {} }; }
+      else if (G.cuts[last]) { G.hands.push({ bets: {}, res: {}, stage: 'bets' }); G.w = { mode: 'bets', idx: last + 1, i: 0, draft: {} }; }
+      else G.w = { mode: 'after', idx: last };
+    }
+    commit(); toast('Mano eliminata');
+  });
 }
 
 /* --- modifica mani passate --- */
