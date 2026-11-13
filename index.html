@@ -154,6 +154,14 @@ textarea{width:100%;min-height:300px;font:16px/1.45 Inter,system-ui,sans-serif;b
 .li span:first-child{flex:1}
 .li b{font-family:'Patrick Hand',cursive;font-size:22px;font-weight:400}
 .li .ed{opacity:.5;font-size:13px}
+.li.pr{cursor:default;gap:6px;padding:6px 8px 6px 12px}
+.li.pr .pn2{flex:1;cursor:pointer;min-width:0}
+.li.pr .tot{flex:none;min-width:64px;text-align:center;font-size:24px}
+.li.pr .cnt{display:flex;align-items:center;gap:4px;flex:none}
+.li.pr .cnt .btn{width:40px;height:40px;padding:0;font-size:22px;border-radius:10px}
+.li.pr .cv{display:flex;flex-direction:column;align-items:center;min-width:34px;line-height:1}
+.li.pr .cv b{font-size:24px}
+.li.pr .cv small{font-size:10px;color:var(--muted)}
 .li.dealer{border-color:#6b5a2a;background:#2f2a1d;cursor:default}
 .warn{background:#3a2320;border:1px solid #7a2e24;color:#ffb4a8;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
 .ok{background:#1f3328;border:1px solid #2f6b4c;color:#a8e6c4;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
@@ -329,13 +337,14 @@ function rDelta(b, r) {
   switch (r.k) {
     case 'W': return b; case 'L': return -b;
     case 'W2': return 2 * b; case 'W3': return 3 * b;
-    case 'L2': return -2 * b; case 'L3': return -3 * b;
+    case 'L2': return -2 * b * (r.p || 1); case 'L3': return -3 * b * (r.p || 1);
     case 'P': return ((r.w || 0) - (r.l || 0)) * b;
   }
   return 0;
 }
 function rLabel(r) {
   if (!r) return '';
+  if ((r.k === 'L2' || r.k === 'L3') && r.p > 1) return `${r.k === 'L2' ? '−×2' : '−×3'}·${r.p}P`;
   return { W: '+', L: '−', W2: '×2', W3: '×3', L2: '−×2', L3: '−×3' }[r.k] || `P${r.w}/${r.l}`;
 }
 function pDelta(h, i) {
@@ -680,6 +689,11 @@ function resSheet() {
   return `<h3>Controlla i conti · mano ${w.idx + 1}</h3>
     <div class="list">${nd.map((i, k) => {
       const r = w.draft[i], dl = rDelta(h.bets[i], r);
+      if (r && (r.k === 'L2' || r.k === 'L3')) {
+        return `<div class="li pr"><span class="pn2" onclick="editRes(${k})">${pn(i)} <small class="muted">· ${h.bets[i]}</small><small class="muted" style="display:block">${r.k === 'L2' ? 'paga ×2' : 'paga ×3'} ✏️</small></span>
+          <b class="tot neg-c">${fmt(dl)}</b>
+          <span class="cnt"><button class="btn" onclick="rpAdj(${i},-1)" ${(r.p || 1) <= 1 ? 'disabled' : ''}>−</button><span class="cv"><b>${r.p || 1}</b><small>${(r.p || 1) === 1 ? 'pista' : 'piste'}</small></span><button class="btn" onclick="rpAdj(${i},1)">+</button></span></div>`;
+      }
       return `<button class="li" onclick="editRes(${k})"><span>${pn(i)} <small class="muted">· ${h.bets[i]}</small></span><b class="${r ? sgn(dl) : ''}">${r ? `${rLabel(r)} → ${fmt(dl)}` : '—'}</b><span class="ed">✏️</span></button>`;
     }).join('')}
       <div class="li dealer"><span>${pn(d)} <small class="muted">· 🃏 mazziere</small></span><b class="${missing ? '' : sgn(dd)}">${missing ? '…' : fmt(dd)}</b></div></div>
@@ -692,7 +706,9 @@ function advanceRes() {
   if (w.single && w.back != null) { w.single = false; w.i = w.back; w.back = null; }
   else if (w.single || w.i >= nd.length - 1) { w.single = false; w.review = true; } else w.i++;
 }
-function pickRes(k) { const w = G.w, i = nonDealers(G.hands[w.idx])[w.i]; w.draft[i] = { k }; advanceRes(); commit(); }
+function pickRes(k) { const w = G.w, i = nonDealers(G.hands[w.idx])[w.i], old = w.draft[i]; w.draft[i] = old && old.k === k && old.p ? { k, p: old.p } : { k }; advanceRes(); commit(); }
+// piste aperte da un giocatore quando il mazziere fa d'emblée / triplée
+function rpAdj(i, d) { const r = G.w.draft[i]; if (!r) return; r.p = Math.max(1, Math.min(13, (r.p || 1) + d)); commit(); }
 function resNav(d) { G.w.i = Math.max(0, G.w.i + d); commit(); }
 function editRes(k) { Object.assign(G.w, { i: k, single: true, review: false }); commit(); }
 function resetResAll() { Object.assign(G.w, { i: 0, single: false, review: false }); commit(); }
