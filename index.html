@@ -813,28 +813,26 @@ function finishAll() { G = null; LS.del('sem_game'); S.view = 'home'; render(); 
 
 /* ===== CONDIVISIONE WHATSAPP ===== */
 const APP_URL = 'https://theonlybzfx.github.io/setteemmezzo/';
-const medal = i => ['🥇', '🥈', '🥉'][i] || `${i + 1}.`;
+// messaggio come quello del gruppo: "Nome emoji +punti", una riga a testa, sempre nello stesso ordine
+const pts = n => (n > 0 ? '+' : n < 0 ? '-' : '') + Math.abs(n);
 function rankText() {
-  return `🏆 *Classifica FISM aggiornata*\n` + ranking().map((r, i) => `${medal(i)} ${r.emoji} ${r.name}  *${fmt(r.score)}*`).join('\n');
+  const g = allPlayers();
+  return ranking().map(r => ({ ...r, o: g[r.id]?.order ?? 999 }))
+    .sort((a, b) => a.o - b.o || a.name.localeCompare(b.name))
+    .map(r => `${r.name} ${r.emoji} ${pts(r.score)}`).join('\n');
 }
 function sendWA(text) {
   const url = 'https://wa.me/?text=' + encodeURIComponent(text);
   const w = window.open(url, '_blank');
   if (!w) location.href = url;
 }
-function shareRanking() {
-  sendWA(`🃏 *Sette e Mezzo · FISM*\n📅 ${new Date().toLocaleDateString('it-IT')}\n\n${rankText()}\n\n👉 ${APP_URL}`);
-}
-function resultsText(entries) {
-  return entries.slice().sort((a, b) => b.t - a.t).map(e => `${e.emoji} ${e.name}  *${fmt(e.t)}*`).join('\n');
-}
+function shareRanking() { sendWA(rankText()); }
 function shareSession() {
-  const fism = G.type === 'fism';
-  const entries = G.players.map((p, i) => ({ emoji: p.emoji, name: p.name, t: G.final[i] }));
-  let t = `🃏 *Sette e Mezzo · ${fism ? 'Partita Ufficiale FISM' : 'Partita a cazz de cane'}*\n📅 ${new Date(G.endedAt || Date.now()).toLocaleDateString('it-IT')} · ${G.mani} ${G.mani === 1 ? 'mano' : 'mani'}\n\n*Risultati della serata*\n${resultsText(entries)}`;
-  if (fism) t += `\n\n${rankText()}`;
-  sendWA(t + `\n\n👉 ${APP_URL}`);
+  if (G.type === 'fism') return sendWA(rankText());
+  // a cazz de cane: la classifica non cambia, condivido i risultati della partita
+  sendWA(G.players.map((p, i) => `${p.name} ${p.emoji} ${pts(G.final[i])}`).join('\n'));
 }
+function shareLoaded() { sendWA(rankText()); }
 
 /* ===== CARICA RISULTATI (conti fatti sul foglio) ===== */
 function startLoad() { S.load = { v: {}, neg: {}, nuovi: [] }; S.view = 'load'; render(); }
@@ -914,10 +912,6 @@ function loadedHTML() {
     <button class="btn wa big" onclick="shareLoaded()">📲 Condividi su WhatsApp</button>
     <button class="btn primary big" onclick="S.loaded=null;goHome()">🏠 Torna all’inizio</button>
   </div></div>`;
-}
-function shareLoaded() {
-  const Ld = S.loaded;
-  sendWA(`🃏 *Sette e Mezzo · Partita Ufficiale FISM*\n📅 ${new Date(Ld.date).toLocaleDateString('it-IT')}\n\n*Risultati della serata*\n${resultsText(Ld.entries)}\n\n${rankText()}\n\n👉 ${APP_URL}`);
 }
 
 /* ---------- schermo sempre acceso durante la partita ---------- */
