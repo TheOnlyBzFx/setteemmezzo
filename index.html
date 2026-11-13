@@ -129,6 +129,10 @@ canvas#sig{width:100%;height:140px;background:#1a1a1a;border:1px dashed #666;bor
 .mbox h3{margin:0 0 4px;font-size:19px}
 .mbox p{margin:0 0 6px;color:#cfcac0;line-height:1.4}
 .choice{text-align:left;padding:16px}
+table.mz{border-collapse:collapse;width:100%;font-size:14px;margin:4px 0}
+table.mz th,table.mz td{padding:5px 6px;border-bottom:1px solid #383838;text-align:center;white-space:nowrap}
+table.mz td:first-child{text-align:left;color:var(--muted)}
+table.mz td:not(:first-child){font-family:'Patrick Hand',cursive;font-size:19px}
 .choice b{font-size:18px}
 #toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 60px);transform:translateX(-50%);background:#000;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
 #toast.on{opacity:.92}
@@ -329,7 +333,7 @@ function setupHTML() {
   const used = new Set(st.slots.map(s => s.sel).filter(v => v && v !== '__new'));
   return `<header class="top"><button class="btn sm ghost" onclick="goHome()">←</button><div class="title">${st.type === 'fism' ? '🏆 Partita Ufficiale FISM' : '🤙 A cazz de cane'}</div></header>
   <div class="scroll"><div class="setup">
-    <h3>Quanti giocatori?</h3>
+    <h3>Quanti giocatori? <small>(da 2 a 6)</small></h3>
     <div class="stepper"><button class="btn" onclick="setN(-1)">−</button><span>${st.n}</span><button class="btn" onclick="setN(1)">+</button></div>
     <h3>Giocatori in ordine</h3>
     ${st.slots.map((s, i) => `<div class="slot"><span class="num">${i + 1}</span>
@@ -343,7 +347,7 @@ function setupHTML() {
   </div></div>`;
 }
 function setN(d) {
-  const st = S.setup; st.n = Math.max(2, Math.min(20, st.n + d));
+  const st = S.setup; st.n = Math.max(2, Math.min(6, st.n + d));
   while (st.slots.length < st.n) st.slots.push({ sel: '', name: '', emoji: '' });
   st.slots.length = st.n; render();
 }
@@ -438,15 +442,20 @@ function betsSheet() {
   const w = G.w, P = G.players;
   if (!w.review) {
     const i = w.i;
-    const dealerTaken = Object.keys(w.draft).some(k => w.draft[k] === 'M' && +k !== i);
+    const dIdx = P.findIndex((_, k) => w.draft[k] === 'M' && k !== i);
+    const dealerTaken = dIdx >= 0;
     const prev = w.idx > 0 ? G.hands[w.idx - 1] : null;
-    return `<div class="shead"><h3>Puntata di <b>${pn(i)}</b></h3><span class="prog">${i + 1}/${P.length}</span></div>
+    const order = P.map((_, k) => k).filter(k => k === i || w.draft[k] !== 'M');
+    const first = betStep(-1, 1) === i;
+    const onlyDealer = Object.keys(w.draft).every(k => w.draft[k] === 'M');
+    return `${dealerTaken && !w.single ? `<div class="glob"><span class="lbl">🃏 Mazziere: <b>${pn(dIdx)}</b> · resta lui fino alla matta</span></div>` : ''}
+      <div class="shead"><h3>Puntata di <b>${pn(i)}</b></h3><span class="prog">${order.indexOf(i) + 1}/${order.length}</span></div>
       <div class="grid g3">${[10, 20, 30, 40, 50].map(v => `<button class="btn bigbtn ${w.draft[i] === v ? 'sel' : ''}" onclick="pickBet(${v})">${v}</button>`).join('')}
         <button class="btn bigbtn dealer ${w.draft[i] === 'M' ? 'sel' : ''}" ${dealerTaken ? 'disabled' : ''} onclick="pickBet('M')">🃏 Mazziere</button></div>
       <div class="row">
-        ${i > 0 && !w.single ? `<button class="btn sm ghost" onclick="betNav(-1)">◀ Indietro</button>` : ''}
+        ${!first && !w.single ? `<button class="btn sm ghost" onclick="betNav(-1)">◀ Indietro</button>` : ''}
         ${w.single ? `<button class="btn sm ghost" onclick="toReview()">◀ Torna al riepilogo</button>` : ''}
-        ${i === 0 && !w.single && prev && prev.stage === 'done' && !Object.keys(w.draft).length ? `<button class="btn sm" onclick="copyPrevBets()">↺ Stesse puntate della mano ${w.idx}</button>` : ''}
+        ${first && !w.single && prev && prev.stage === 'done' && !G.cuts[w.idx - 1] && onlyDealer && dealerOf(prev) === (dealerTaken ? dIdx : dealerOf(prev)) ? `<button class="btn sm" onclick="copyPrevBets()">↺ Stesse puntate della mano ${w.idx}</button>` : ''}
         ${cancelBtn()}
       </div>`;
   }
@@ -463,10 +472,17 @@ function pickBet(v) {
   const w = G.w;
   if (v === 'M') for (const k in w.draft) if (w.draft[k] === 'M') delete w.draft[k];
   w.draft[w.i] = v;
-  if (w.single || w.i >= G.players.length - 1) { w.single = false; w.review = true; } else w.i++;
+  const nx = betStep(w.i, 1);
+  if (w.single || nx < 0) { w.single = false; w.review = true; } else w.i = nx;
   commit();
 }
-function betNav(d) { G.w.i = Math.max(0, G.w.i + d); commit(); }
+// prossimo/precedente giocatore che deve puntare (salta il mazziere già scelto)
+function betStep(from, dir) {
+  const w = G.w;
+  for (let k = from + dir; k >= 0 && k < G.players.length; k += dir) if (w.draft[k] !== 'M') return k;
+  return -1;
+}
+function betNav(d) { const k = betStep(G.w.i, d); if (k >= 0) G.w.i = k; commit(); }
 function editBet(i) { Object.assign(G.w, { i, single: true, review: false }); commit(); }
 function toReview() { Object.assign(G.w, { single: false, review: true, piste: null }); commit(); }
 function copyPrevBets() { G.w.draft = { ...G.hands[G.w.idx - 1].bets }; G.w.review = true; commit(); }
@@ -568,14 +584,17 @@ function afterSheet() {
   const w = G.w, h = G.hands[w.idx], d = dealerOf(h), dd = pDelta(h, d);
   return `<h3>✅ Mano ${w.idx + 1} chiusa · ${pn(d)} <span class="${sgn(dd)}">${fmt(dd)}</span></h3>
     <div class="grid g2">
-      <button class="btn primary" style="padding:18px 8px;font-size:17px" onclick="nextHand()">▶ Continua<small>nuova mano</small></button>
-      <button class="btn" style="padding:18px 8px;font-size:17px;border-color:var(--gold)" onclick="matta()">🃏 È uscita la matta<small>si rimischia il mazzo</small></button>
+      <button class="btn primary" style="padding:18px 8px;font-size:17px" onclick="nextHand()">▶ Continua<small>stesso mazziere</small></button>
+      <button class="btn" style="padding:18px 8px;font-size:17px;border-color:var(--gold)" onclick="matta()">🃏 È uscita la matta<small>riga, firma e nuovo mazziere</small></button>
     </div>
     <div class="row"><button class="btn sm ghost" onclick="handMenu(${w.idx})">✏️ Modifica questa mano</button></div>`;
 }
-function nextHand() {
+function nextHand(keepDealer = true) {
+  const d = dealerOf(G.hands[G.hands.length - 1]);
+  const draft = keepDealer && d >= 0 ? { [d]: 'M' } : {};
   G.hands.push({ bets: {}, res: {}, stage: 'bets' });
-  G.w = { mode: 'bets', idx: G.hands.length - 1, i: 0, draft: {}, review: false };
+  G.w = { mode: 'bets', idx: G.hands.length - 1, i: 0, draft, review: false };
+  G.w.i = betStep(-1, 1);
   commit();
 }
 function matta() { G.w = { mode: 'sign', idx: G.w.idx }; commit(); }
@@ -609,7 +628,7 @@ function doSign() {
   out.getContext('2d').drawImage(c, 0, 0, out.width, out.height);
   const si = +$('#signer').value;
   G.cuts[G.w.idx] = { signer: G.players[si].name, sig: out.toDataURL('image/png'), t: Date.now() };
-  nextHand();
+  nextHand(false);
   toast('Mazzo firmato ✍️ Si rimischia!');
 }
 
@@ -644,12 +663,30 @@ function resetHand(idx) {
 /* ===== FINE SESSIONE ===== */
 function askEnd() {
   const done = G.hands.filter(h => h.stage === 'done').length;
-  const inc = G.hands.some(h => h.stage !== 'done' && (h.stage !== 'bets' || Object.keys(G.w.draft || {}).length));
+  const inc = G.hands.some((h, idx) => h.stage !== 'done' && (h.stage !== 'bets' || (G.w.idx === idx && Object.values(G.w.draft || {}).some(v => v !== 'M'))));
   if (!done) {
     confirmModal('FINE SESSIONE?', 'Non c’è ancora nessuna mano finita: la partita viene chiusa senza salvare niente.', 'Chiudi la partita', () => { G = null; LS.del('sem_game'); goHome(); });
     return;
   }
-  confirmModal('FINE SESSIONE?', `${done} ${done === 1 ? 'mano giocata' : 'mani giocate'}. ${inc ? 'La mano in corso non è finita e <b>non verrà contata</b>. ' : ''}${G.type === 'fism' ? 'I totali verranno <b>aggiunti alla classifica FISM</b>.' : 'Partita a cazz de cane: i totali <b>non</b> verranno salvati.'}`, 'Sì, fine sessione', endSession);
+  const P = G.players, tot = totals(), sum = tot.reduce((a, b) => a + b, 0), fism = G.type === 'fism';
+  const rk = {}; ranking().forEach(r => rk[r.id] = r.score);
+  const order = P.map((p, i) => ({ p, i, t: tot[i] })).sort((a, b) => b.t - a.t);
+  // totali per mazzo (tra una matta e l'altra)
+  const mazzi = []; let cur = P.map(() => 0), has = false;
+  G.hands.forEach((h, idx) => {
+    if (h.stage === 'done') { P.forEach((_, i) => cur[i] += pDelta(h, i)); has = true; }
+    if (G.cuts[idx]) { mazzi.push({ t: cur, firma: G.cuts[idx].signer }); cur = P.map(() => 0); has = false; }
+  });
+  if (has) mazzi.push({ t: cur, firma: null });
+  modal(`<h3>🏁 Risultati della sessione</h3>
+    <p>${done} ${done === 1 ? 'mano giocata' : 'mani giocate'} · ${Object.keys(G.cuts).length} ${Object.keys(G.cuts).length === 1 ? 'mazzo firmato' : 'mazzi firmati'}${inc ? '<br>⚠️ La mano in corso non è finita e <b>non viene contata</b>.' : ''}</p>
+    <ol class="rank">${order.map((o, k) => `<li><span class="pos">${k + 1}</span><span class="em">${esc(o.p.emoji)}</span><span class="nm">${esc(o.p.name)}${fism ? `<span class="sub">classifica ${fmt(rk[o.p.id] ?? 0)} → <b class="${sgn((rk[o.p.id] ?? 0) + o.t)}">${fmt((rk[o.p.id] ?? 0) + o.t)}</b></span>` : ''}</span><span class="sc ${sgn(o.t)}">${fmt(o.t)}</span></li>`).join('')}</ol>
+    ${mazzi.length > 1 ? `<div style="overflow-x:auto"><table class="mz"><tr><th></th>${P.map(p => `<th>${esc(p.emoji)}</th>`).join('')}</tr>
+      ${mazzi.map((m, k) => `<tr><td>Mazzo ${k + 1}${m.firma ? ' ✍️' : ' (in corso)'}</td>${m.t.map(t => `<td class="${sgn(t)}">${fmt(t)}</td>`).join('')}</tr>`).join('')}</table></div>` : ''}
+    <div class="${sum === 0 ? 'ok' : 'warn'}">Somma di tutti: ${sum} ${sum === 0 ? '· i conti tornano ✓' : '⚠️'}</div>
+    <p>${fism ? 'Confermando, questi risultati vengono <b>aggiunti alla classifica FISM</b>.' : 'Partita a cazz de cane: confermando <b>non</b> viene salvato niente.'}</p>
+    <button class="btn red" onclick="closeModal();endSession()">✓ Conferma fine sessione</button>
+    <button class="btn" onclick="closeModal()">◀ Torna alla partita</button>`);
 }
 function endSession() {
   const tot = totals(), done = G.hands.filter(h => h.stage === 'done').length;
