@@ -228,6 +228,29 @@ table.gt td.e{color:var(--red);text-align:center;font-family:'Patrick Hand',curs
 table.gt tr.dl td{color:var(--gold)}
 .gcut{display:flex;align-items:center;gap:8px;margin:4px 0 14px;color:var(--muted);font-size:13px}
 .gcut:before,.gcut:after{content:'';flex:1;border-top:3px solid var(--chalk)}
+.paybox{background:linear-gradient(135deg,#3b2f10,#2a2210);border:2px solid var(--gold);border-radius:16px;padding:12px 14px;margin-bottom:14px}
+.paybox .pt{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
+.paybox .pw{font-size:17px;margin:6px 0 10px;line-height:1.4}
+.paybox .btn{width:100%}
+.gasbox{background:#1a1a19;border:1px solid #333;border-radius:16px;padding:10px 12px 12px;margin:10px 0;text-align:center}
+.gasbox svg{width:100%;max-width:340px;display:block;margin:0 auto}
+.gasbox .gl{font-size:20px;font-weight:800;margin-top:-4px}
+.gasbox .gs{font-size:13px;color:var(--muted)}
+.mgas{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--muted)}
+.mgas .bar{flex:1;height:6px;border-radius:3px;background:#3a3a3a;overflow:hidden}
+.mgas .bar i{display:block;height:100%;border-radius:3px}
+.chartbox{position:relative;background:#1a1a19;border:1px solid #333;border-radius:16px;padding:8px 6px 4px;margin-bottom:10px}
+.chartbox svg{width:100%;height:auto;display:block;touch-action:pan-y}
+.chartbox .tip{position:absolute;top:8px;pointer-events:none;background:rgba(10,10,10,.92);border:1px solid #444;border-radius:10px;padding:6px 9px;font-size:12px;line-height:1.5;display:none;white-space:nowrap;z-index:2}
+.chartbox .tip b{font-family:'Patrick Hand',cursive;font-size:16px;font-weight:400}
+.seg2{display:flex;border:1px solid #555;border-radius:10px;overflow:hidden;margin-bottom:10px}
+.seg2 button{flex:1;background:#262626;color:var(--chalk);border:none;padding:9px 6px;font:600 13px Inter,sans-serif;cursor:pointer}
+.seg2 button.on{background:var(--gold);color:#141414}
+.lgd{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 14px}
+.lgd button{display:flex;align-items:center;gap:6px;background:#262626;border:1px solid #3d3d3d;border-radius:20px;padding:5px 10px 5px 7px;color:var(--chalk);font:13px Inter,sans-serif;cursor:pointer}
+.lgd button.off{opacity:.45}
+.lgd i{width:12px;height:12px;border-radius:50%;flex:none}
+.lgd b{font-family:'Patrick Hand',cursive;font-size:16px;font-weight:400}
 .li.dealer{border-color:#6b5a2a;background:#2f2a1d;cursor:default}
 .warn{background:#3a2320;border:1px solid #7a2e24;color:#ffb4a8;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
 .ok{background:#1f3328;border:1px solid #2f6b4c;color:#a8e6c4;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
@@ -471,6 +494,7 @@ function render() {
   else if (S.view === 'loaded') a.innerHTML = loadedHTML();
   else if (S.view === 'msg') a.innerHTML = msgHTML();
   else if (S.view === 'hist') a.innerHTML = histHTML();
+  else if (S.view === 'graf') { a.innerHTML = grafHTML(); afterGraf(); }
   else if (S.view === 'histNum') { a.innerHTML = histNumHTML(); updHistSum(); }
   else if (S.view === 'msgdone') a.innerHTML = msgDoneHTML();
   else { S.view = 'home'; a.innerHTML = homeHTML(); }
@@ -485,6 +509,7 @@ function homeHTML() {
   const pend = LS.get('sem_pending', []).length;
   return `<header class="top"><div class="logo">7½</div><div class="title">Sette e Mezzo <small>FISM</small></div></header>
   <div class="scroll"><div class="home">
+    ${payBanner()}
     ${G && !G.ended ? `<button class="btn resume" onclick="resume()">▶ Riprendi la partita in corso
       <small>${G.type === 'fism' ? '🏆 Ufficiale FISM' : '🤙 A cazz de cane'} · ${G.players.length} giocatori · mano ${G.hands.length}</small></button>` : ''}
     <button class="btn primary big" onclick="askType()">🃏 Nuova partita</button>
@@ -999,6 +1024,7 @@ function endSession() {
   flushPending().then(render);
 }
 function summaryHTML() {
+  setTimeout(animGauge, 60);
   const tot = G.final, sum = tot.reduce((a, b) => a + b, 0);
   const order = G.players.map((p, i) => ({ p, t: tot[i] })).sort((a, b) => b.t - a.t);
   const pending = LS.get('sem_pending', []).some(x => x.id === G.id);
@@ -1008,6 +1034,7 @@ function summaryHTML() {
     <p class="muted">${G.type === 'fism' ? '🏆 Partita Ufficiale FISM' : '🤙 A cazz de cane'} · ${G.mani} ${G.mani === 1 ? 'mano' : 'mani'} · ${Object.keys(G.cuts).length} ${Object.keys(G.cuts).length === 1 ? 'mazzo firmato' : 'mazzi firmati'}</p>
     <ol class="rank">${order.map((o, i) => `<li><span class="pos">${i + 1}</span><span class="em">${esc(o.p.emoji)}</span><span class="nm">${esc(o.p.name)}${G.type === 'fism' ? `<span class="sub">classifica ${fmt(rk[o.p.id] ?? 0)}</span>` : ''}</span><span class="sc ${sgn(o.t)}">${fmt(o.t)}</span></li>`).join('')}</ol>
     <div class="${sum === 0 ? 'ok' : 'warn'}">Somma di tutti: ${sum} ${sum === 0 ? '· i conti tornano ✓' : '⚠️'}</div>
+    <div class="gasbox">${gaugeSVG(Math.max(...tot) - Math.min(...tot))}</div>
     ${G.type === 'fism'
       ? (pending ? `<div class="warn">⏳ Non ancora salvata in classifica (manca la connessione?). Resta in memoria e riprovo in automatico.</div><button class="btn" onclick="flushPending().then(render)">Riprova ora</button>`
                  : `<div class="ok">✅ Salvata nella classifica FISM${SYNC === 'local' ? ' (su questo telefono)' : ''}</div>`)
@@ -1215,6 +1242,7 @@ function allSessions() {
 function sessLabel(r) {
   if (r.fonte === 'foglio') return '📝 Risultati dal foglio';
   if (r.fonte === 'messaggio') return '📋 Aggiornamento da messaggio';
+  if (r.fonte === 'pagamento') return `💸 Pagamento di fine mese${r.mese ? ' · ' + meseNome(r.mese) : ''}`;
   return `🃏 Partita · ${r.mani ?? '?'} ${r.mani === 1 ? 'mano' : 'mani'}${r.tabella ? '' : ' (senza tabella)'}`;
 }
 function openHistList() { S.view = 'hist'; render(); }
@@ -1222,10 +1250,12 @@ function histHTML() {
   const list = allSessions(), g = allPlayers();
   return `<header class="top"><button class="btn sm ghost" onclick="goHome()">←</button><div class="title">📜 Storico partite <small>🏆 FISM</small></div></header>
   <div class="scroll"><div class="home">
+    <button class="btn primary big" style="margin:0 0 14px" onclick="openGraf()">📈 Grafico e gasometro</button>
     ${list.length ? `<p class="muted" style="margin-top:0">Tocca una partita per vederla e modificarla.</p>` : `<p class="muted">Non c’è ancora nessuna partita salvata.</p>`}
     ${list.map(r => `<button class="hcard" onclick="openHist('${esc(r.id)}')">
       <div class="hd"><span>${esc(sessLabel(r))}</span><small>${esc(dstr(r.date))}${r.modificata ? ' · ✏️' : ''}</small></div>
       <div class="hp">${Object.entries(r.deltas || {}).sort((a, b) => b[1] - a[1]).map(([id, v]) => `<span>${esc(g[id]?.emoji || '🃏')} ${esc(g[id]?.name || id)} <b class="${sgn(v)}">${fmt(v)}</b></span>`).join('')}</div>
+      ${isGame(r) ? miniGas(r) : ''}
     </button>`).join('')}
   </div></div>`;
 }
@@ -1324,6 +1354,176 @@ function saveHistNum() {
     pushSession({ ...rest, id, deltas: nd, modificata: new Date().toISOString() });
     S.hn = null; S.view = 'hist'; render(); toast('Partita aggiornata ✓');
   });
+}
+
+/* ===== GRAFICO, GASOMETRO E PAGAMENTO DI FINE MESE ===== */
+const SERIES = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'];
+const today = () => window.__oggi ? new Date(window.__oggi) : new Date();
+const meseNome = k => { const [y, m] = k.split('-').map(Number); return new Date(y, m - 1, 1).toLocaleString('it-IT', { month: 'long', year: 'numeric' }); };
+const isGame = r => !r.fonte || r.fonte === 'foglio';
+// gasometro: differenza tra chi ha vinto di più e chi ha perso di più
+function gasOf(r) { const v = Object.values(r.deltas || {}).map(Number); return v.length ? Math.max(...v) - Math.min(...v) : 0; }
+function gasLevel(g) {
+  if (g < 150) return ['😴 Moscia', '#8a8780'];
+  if (g < 350) return ['🙂 Tranquilla', '#c98500'];
+  if (g < 600) return ['🔥 Gasata', '#d95926'];
+  return ['🚀 Gasatissima', '#e0442f'];
+}
+function gasMax() { return Math.max(800, ...allSessions().filter(isGame).map(gasOf)); }
+function miniGas(r) {
+  const g = gasOf(r), [lab, col] = gasLevel(g), pct = Math.min(100, g / gasMax() * 100);
+  return `<div class="mgas">⛽<span class="bar"><i style="width:${pct}%;background:${col}"></i></span><span>${lab} · ${g}</span></div>`;
+}
+function gaugeSVG(g) {
+  const max = gasMax(), [lab, col] = gasLevel(g), f = Math.min(1, g / max);
+  const cx = 150, cy = 140, R = 110, pt = a => [cx - R * Math.cos(a), cy - R * Math.sin(a)];
+  const arc = (a0, a1, c) => { const [x0, y0] = pt(a0), [x1, y1] = pt(a1); return `<path d="M${x0} ${y0} A${R} ${R} 0 0 1 ${x1} ${y1}" stroke="${c}" stroke-width="18" fill="none"/>`; };
+  const zones = [[0, 150, '#5a5853'], [150, 350, '#c98500'], [350, 600, '#d95926'], [600, max, '#e0442f']]
+    .filter(([a]) => a < max).map(([a, b, c]) => arc(Math.PI * a / max + .01, Math.PI * Math.min(b, max) / max - .01, c)).join('');
+  return `<svg viewBox="0 0 300 160" role="img" aria-label="Gasometro: ${lab}, ${g} punti di differenza">
+    ${zones}
+    <g class="needle" data-a="${(f * 180).toFixed(1)}" style="transform-origin:${cx}px ${cy}px;transform:rotate(0deg);transition:transform 1.6s cubic-bezier(.2,1.4,.4,1)">
+      <line x1="${cx}" y1="${cy}" x2="${cx - R + 22}" y2="${cy}" stroke="#f4f1ea" stroke-width="4" stroke-linecap="round"/></g>
+    <circle cx="${cx}" cy="${cy}" r="9" fill="#f4f1ea"/>
+    <text x="${cx - R}" y="${cy + 18}" fill="#9a968e" font-size="12" text-anchor="middle">0</text>
+    <text x="${cx + R}" y="${cy + 18}" fill="#9a968e" font-size="12" text-anchor="middle">${max}</text>
+  </svg><div class="gl" style="color:${col}">${lab}</div><div class="gs">⛽ ${g} punti tra chi ha vinto di più e chi ha perso di più</div>`;
+}
+function animGauge() { document.querySelectorAll('.needle').forEach(n => requestAnimationFrame(() => n.style.transform = `rotate(${n.dataset.a}deg)`)); }
+
+// --- pagamento di fine mese: l'ultimo paga il primo ---
+function monthToSettle() {
+  const t = today(), last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+  let y = t.getFullYear(), m = t.getMonth();
+  if (t.getDate() !== last) { m--; if (m < 0) { m = 11; y--; } }
+  const key = `${y}-${String(m + 1).padStart(2, '0')}`;
+  if (key < '2026-11') return null;
+  if (allSessions().some(s => s.fonte === 'pagamento' && s.mese === key)) return null;
+  return key;
+}
+function payBanner() {
+  const key = monthToSettle(); if (!key) return '';
+  const r = ranking(); if (r.length < 2) return '';
+  const first = r[0], last = r[r.length - 1];
+  return `<div class="paybox"><div class="pt">💸 Fine mese · ${esc(meseNome(key))}</div>
+    <div class="pw">${esc(last.emoji)} <b>${esc(last.name)}</b> <small class="muted">(ultimo, ${fmt(last.score)})</small> deve pagare ${esc(first.emoji)} <b>${esc(first.name)}</b> <small class="muted">(primo, ${fmt(first.score)})</small></div>
+    <button class="btn primary" onclick="askPay('${key}')">💸 Paga</button></div>`;
+}
+function askPay(key) {
+  const r = ranking(), first = r[0], last = r[r.length - 1];
+  S.pay = { key, first, last };
+  modal(`<h3>💸 Pagamento di fine mese</h3>
+    <p>Quanto ha pagato ${esc(last.emoji)} <b>${esc(last.name)}</b> a ${esc(first.emoji)} <b>${esc(first.name)}</b>?</p>
+    <input id="payAmt" inputmode="numeric" pattern="[0-9]*" placeholder="Importo pagato" style="font-size:22px;text-align:center" oninput="this.value=this.value.replace(/\\D/g,'')">
+    <button class="btn primary" onclick="checkPay()">Controlla ▶</button>
+    <button class="btn ghost" onclick="closeModal()">Annulla</button>`);
+  setTimeout(() => $('#payAmt')?.focus(), 100);
+}
+function checkPay() {
+  const X = parseInt(($('#payAmt')?.value || '').replace(/\D/g, ''), 10);
+  if (!X) return toast('Scrivi quanto ha pagato');
+  const { key, first, last } = S.pay; S.pay.X = X;
+  modal(`<h3>💸 Conferma il pagamento</h3>
+    <p>${esc(last.name)} ha pagato <b>${X}</b> a ${esc(first.name)}. La classifica diventa:</p>
+    <ol class="rank">
+      <li><span class="em">${esc(first.emoji)}</span><span class="nm">${esc(first.name)}<span class="sub">${fmt(first.score)} → −${X}</span></span><span class="sc ${sgn(first.score - X)}">${fmt(first.score - X)}</span></li>
+      <li><span class="em">${esc(last.emoji)}</span><span class="nm">${esc(last.name)}<span class="sub">${fmt(last.score)} → +${X}</span></span><span class="sc ${sgn(last.score + X)}">${fmt(last.score + X)}</span></li>
+    </ol>
+    <button class="btn primary" onclick="closeModal();savePay()">✓ Conferma e aggiorna la classifica</button>
+    <button class="btn" onclick="askPay('${key}')">◀ Cambia importo</button>`);
+}
+function savePay() {
+  const { key, first, last, X } = S.pay;
+  pushSession({ id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: new Date().toISOString(), type: 'fism', fonte: 'pagamento',
+    mese: key, da: last.id, a: first.id, importo: X, deltas: { [first.id]: -X, [last.id]: X }, giocatori: [first.name, last.name] });
+  S.pay = null; render(); toast('Pagamento registrato ✓');
+}
+
+// --- grafico dell'andamento ---
+function openGraf() { S.view = 'graf'; S.gmode = S.gmode || 'zero'; render(); }
+function grafData() {
+  const g = allPlayers(), list = allSessions().slice().reverse();   // dalla più vecchia
+  const tot = S.gmode === 'tot';
+  const labels = ['Inizio'];
+  const cur = {}; Object.keys(g).forEach(id => cur[id] = 0);
+  const pts = {}; Object.keys(g).forEach(id => pts[id] = [0]);
+  if (tot) { labels.push('Partenza'); Object.keys(g).forEach(id => { cur[id] = +g[id].base || 0; pts[id].push(cur[id]); }); }
+  list.forEach(r => {
+    labels.push(new Date(r.date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }));
+    Object.entries(r.deltas || {}).forEach(([id, v]) => { if (cur[id] == null) { cur[id] = 0; pts[id] = Array(labels.length - 1).fill(0); } cur[id] += +v || 0; });
+    Object.keys(cur).forEach(id => pts[id].push(cur[id]));
+  });
+  const ids = Object.keys(pts).filter(id => pts[id].some(v => v !== 0));
+  return { g, labels, pts, ids };
+}
+function niceStep(range) { const raw = range / 4, p = Math.pow(10, Math.floor(Math.log10(raw || 1))), n = raw / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; }
+function grafHTML() {
+  const { g, labels, pts, ids } = grafData();
+  const order = Object.keys(g).sort((a, b) => (g[a].order ?? 999) - (g[b].order ?? 999));
+  const fin = id => pts[id][pts[id].length - 1];
+  // evidenziati: scelti dall'utente, altrimenti i primi 4 e gli ultimi 4
+  if (!S.gsel || !S.gsel.length) { const s = ids.slice().sort((a, b) => fin(b) - fin(a)); S.gsel = [...new Set([...s.slice(0, 4), ...s.slice(-4)])]; }
+  const sel = order.filter(id => S.gsel.includes(id) && ids.includes(id)).slice(0, 8);
+  const color = {}; sel.forEach((id, k) => color[id] = SERIES[k]);
+  const games = allSessions().filter(isGame);
+  const gsel = S.gsess && games.find(r => r.id === S.gsess) || games[0];
+  const W = Math.round(Math.min(700, Math.max(300, (window.innerWidth || 390) - 40))), H = Math.round(W * .62), L = 44, Rm = 32, T = 12, B = 26, N = labels.length - 1;
+  let svg = '';
+  if (N >= 1 && ids.length) {
+    const all = ids.flatMap(id => pts[id]); let lo = Math.min(0, ...all), hi = Math.max(0, ...all);
+    const st = niceStep(hi - lo || 100); lo = Math.floor(lo / st) * st; hi = Math.ceil(hi / st) * st; if (hi === lo) hi = lo + st;
+    const X = i => L + (W - L - Rm) * i / N, Y = v => T + (H - T - B) * (hi - v) / (hi - lo);
+    let grid = '';
+    for (let v = lo; v <= hi + 1e-9; v += st) grid += `<line x1="${L}" x2="${W - Rm}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v === 0 ? '#8a8780' : '#2e2e2c'}" stroke-width="${v === 0 ? 1.5 : 1}"/><text x="${L - 6}" y="${Y(v) + 4}" fill="#9a968e" font-size="11" text-anchor="end">${v > 0 ? '+' : ''}${v}</text>`;
+    const every = Math.max(1, Math.ceil(N / 6));
+    labels.forEach((lb, i) => { if (i % every === 0 || i === N) grid += `<text x="${X(i)}" y="${H - 9}" fill="#9a968e" font-size="11" text-anchor="middle">${esc(lb)}</text>`; });
+    const path = arr => arr.map((v, i) => i === 0 ? `M${X(0)} ${Y(v)}` : `C${(X(i - 1) + X(i)) / 2} ${Y(arr[i - 1])} ${(X(i - 1) + X(i)) / 2} ${Y(v)} ${X(i)} ${Y(v)}`).join(' ');
+    const grey = ids.filter(id => !color[id]).map(id => `<path class="ln" d="${path(pts[id])}" stroke="#4a4a47" stroke-width="1.5" fill="none" stroke-linecap="round"/>`).join('');
+    const col = sel.map(id => `<path class="ln" d="${path(pts[id])}" stroke="${color[id]}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`).join('');
+    const ends = sel.map(id => `<g class="end"><circle cx="${X(N)}" cy="${Y(fin(id))}" r="5" fill="${color[id]}" stroke="#1a1a19" stroke-width="2"/><text x="${X(N) + 9}" y="${Y(fin(id)) + 5}" font-size="14">${esc(g[id]?.emoji || '')}</text></g>`).join('');
+    svg = `<svg id="gsvg" viewBox="0 0 ${W} ${H}" data-n="${N}" data-l="${L}" data-w="${W - L - Rm}" role="img" aria-label="Andamento dei punteggi">${grid}${grey}${col}${ends}<line id="gcross" y1="${T}" y2="${H - B}" stroke="#f4f1ea" stroke-width="1" opacity="0"/></svg>`;
+    S.gdata = { labels, pts, sel, color, g };
+  }
+  return `<header class="top"><button class="btn sm ghost" onclick="openHistList()">←</button><div class="title">📈 Grafico <small>🏆 FISM</small></div></header>
+  <div class="scroll"><div class="home">
+    <div class="seg2"><button class="${S.gmode !== 'tot' ? 'on' : ''}" onclick="S.gmode='zero';render()">Tutti da zero</button><button class="${S.gmode === 'tot' ? 'on' : ''}" onclick="S.gmode='tot';render()">Con i punti di partenza</button></div>
+    ${svg ? `<div class="chartbox">${svg}<div class="tip" id="gtip"></div></div>
+      <div class="row" style="justify-content:space-between;margin:0"><span class="muted" style="font-size:12px">Tocca i nomi per scegliere chi colorare (max 8) · tocca il grafico per i valori</span><button class="btn sm" onclick="render()">▶ Rivedi</button></div>
+      <div class="lgd">${order.filter(id => ids.includes(id)).map(id => `<button class="${color[id] ? '' : 'off'}" onclick="toggleG('${esc(id)}')"><i style="background:${color[id] || '#4a4a47'}"></i>${esc(g[id]?.emoji || '')} ${esc(g[id]?.name || id)} <b>${fmt(fin(id))}</b></button>`).join('')}</div>`
+      : `<div class="ok">Il grafico comparirà dopo la prima partita salvata.</div>`}
+    <h3 style="margin:18px 0 8px">⛽ Gasometro di partita</h3>
+    ${gsel ? `<select style="width:100%;margin-bottom:8px" onchange="S.gsess=this.value;render()">${games.map(r => `<option value="${esc(r.id)}" ${r.id === gsel.id ? 'selected' : ''}>${esc(dstr(r.date))} · ${esc(sessLabel(r))}</option>`).join('')}</select>
+      <div class="gasbox">${gaugeSVG(gasOf(gsel))}</div>
+      <p class="muted" style="font-size:13px">Più è grande la differenza tra chi ha vinto di più e chi ha perso di più, più la partita ha gasato. Record: <b>${Math.max(...games.map(gasOf))}</b></p>`
+      : `<p class="muted">Nessuna partita ancora.</p>`}
+  </div></div>`;
+}
+function toggleG(id) {
+  const s = S.gsel || [];
+  if (s.includes(id)) S.gsel = s.filter(x => x !== id);
+  else { if (s.length >= 8) return toast('Massimo 8 colorati: togline uno'); S.gsel = [...s, id]; }
+  render();
+}
+function afterGraf() {
+  animGauge();
+  const svg = $('#gsvg'); if (!svg) return;
+  svg.querySelectorAll('.ln').forEach(p => {
+    const len = p.getTotalLength(); p.style.strokeDasharray = len; p.style.strokeDashoffset = len;
+    p.getBoundingClientRect(); p.style.transition = 'stroke-dashoffset 2.2s ease-in-out'; p.style.strokeDashoffset = 0;
+  });
+  svg.querySelectorAll('.end').forEach(e => { e.style.opacity = 0; e.style.transition = 'opacity .5s 2s'; requestAnimationFrame(() => e.style.opacity = 1); });
+  const tip = $('#gtip'), cross = $('#gcross'), D = S.gdata;
+  const show = ev => {
+    const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal, x = (ev.clientX - r.left) * vb.width / r.width;
+    const n = +svg.dataset.n, l = +svg.dataset.l, w = +svg.dataset.w, i = Math.max(0, Math.min(n, Math.round((x - l) / w * n)));
+    const cx = l + w * i / n; cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.setAttribute('opacity', .5);
+    const rows = D.sel.map(id => ({ id, v: D.pts[id][i] })).sort((a, b) => b.v - a.v);
+    tip.innerHTML = `<div class="muted">${esc(D.labels[i])}</div>` + rows.map(o => `<div><span style="color:${D.color[o.id]}">●</span> ${esc(D.g[o.id]?.emoji || '')} ${esc(D.g[o.id]?.name || o.id)} <b>${fmt(o.v)}</b></div>`).join('');
+    tip.style.display = 'block';
+    const px = cx * r.width / vb.width; tip.style.left = (px > r.width / 2 ? px - tip.offsetWidth - 10 : px + 10) + 'px';
+  };
+  svg.addEventListener('pointerdown', show); svg.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) show(e); });
+  svg.addEventListener('pointerleave', () => { tip.style.display = 'none'; cross.setAttribute('opacity', 0); });
 }
 
 /* ---------- schermo sempre acceso durante la partita ---------- */
