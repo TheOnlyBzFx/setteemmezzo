@@ -278,6 +278,27 @@ tr.mzt td.n{color:var(--gold)}
 .mzd{font-size:16px;font-weight:600;color:var(--muted);line-height:1.3}
 .sh.compact .mzv{font-size:14px}
 .sh.compact .mzd{font-size:13px}
+.tbar{display:flex;gap:6px;padding:6px 10px;overflow-x:auto;background:var(--bg2);border-bottom:1px solid var(--line);flex:none;-webkit-overflow-scrolling:touch;padding-left:calc(env(safe-area-inset-left) + 10px)}
+.tbar .btn{white-space:nowrap;flex:none;padding:7px 10px;font-size:13px}
+.tbar .btn.dim{opacity:.4}
+.tbar .btn.on{background:var(--gold);color:#141414;border-color:var(--gold)}
+.tbar .btn.u4{border-color:#e0442f;color:#ff8a78}
+.tbar .btn.on4{background:#3a2320;border-color:#e0442f;color:#ffb4a8}
+.editbar{flex:none;background:#3a3220;color:var(--gold);font-size:13px;padding:6px 12px;text-align:center}
+.mv{display:flex;justify-content:center;gap:4px;margin-top:3px}
+.mv button{background:#3a3a37;color:var(--chalk);border:1px solid #555;border-radius:8px;width:30px;height:26px;font-size:12px;padding:0;cursor:pointer}
+.mv button:disabled{opacity:.25}
+.sh.editing th{background:#2a2618}
+.sh.xc th .pn{font-size:10px}
+.sh.xc th .pe{font-size:13px}
+.sh.xc td{padding:2px 2px;height:38px}
+.sh.xc .bet{font-size:14px}
+.sh.xc .r{font-size:8.5px;top:-5px}
+.sh.xc .run{font-size:9px}
+.sh.xc tfoot td{font-size:16px}
+.sh.xc tfoot td.lg{font-size:12.5px}
+.sh.xc .mzd{font-size:11px}
+.sh.xc .mv button{width:20px;font-size:10px}
 .li.dealer{border-color:#6b5a2a;background:#2f2a1d;cursor:default}
 .warn{background:#3a2320;border:1px solid #7a2e24;color:#ffb4a8;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
 .ok{background:#1f3328;border:1px solid #2f6b4c;color:#a8e6c4;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
@@ -526,6 +547,20 @@ function loginHTML() {
     <form onsubmit="event.preventDefault();tryLogin()"><input id="pw" type="password" autocomplete="current-password" placeholder="Password">
     <button class="btn primary big" type="submit">Entra</button></form></div>`;
 }
+let _passFn = null;
+function askPass(fn) {
+  _passFn = fn;
+  modal(`<h3>🔒 Partita Ufficiale FISM</h3><p>Inserisci la password per giocare una partita ufficiale.</p>
+    <form onsubmit="event.preventDefault();checkPass()"><input id="pw" type="password" autocomplete="current-password" placeholder="Password" style="width:100%;text-align:center;font-size:20px">
+    <button class="btn primary big" type="submit">Entra</button></form>
+    <button class="btn ghost" onclick="closeModal()">Annulla</button>`);
+  setTimeout(() => $('#pw')?.focus(), 80);
+}
+function checkPass() {
+  const el = $('#pw');
+  if (phash(el.value.trim()) === PASS_HASH) { closeModal(); const f = _passFn; _passFn = null; f && f(); }
+  else { el.value = ''; el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); toast('Password sbagliata'); }
+}
 function tryLogin() {
   const el = $('#pw');
   if (phash(el.value.trim()) === PASS_HASH) { LS.set('sem_auth', PASS_HASH); render(); }
@@ -535,7 +570,6 @@ function tryLogin() {
 /* ---------- render ---------- */
 function render() {
   const a = $('#app');
-  if (!authed()) { a.innerHTML = loginHTML(); setTimeout(() => $('#pw')?.focus(), 50); return; }
   if (S.view === 'home') a.innerHTML = homeHTML();
   else if (S.view === 'setup') a.innerHTML = setupHTML();
   else if (S.view === 'game' && G) { a.innerHTML = gameHTML(); afterGameRender(); }
@@ -578,7 +612,7 @@ function askType() {
     return;
   }
   modal(`<h3>Che partita è?</h3>
-    <button class="btn choice" onclick="startSetup('fism')"><b>🏆 Partita Ufficiale FISM</b><small>Conta per il torneo: a fine sessione aggiorna la classifica</small></button>
+    <button class="btn choice" onclick="askPass(() => startSetup('fism'))"><b>🏆 Partita Ufficiale FISM</b><small>Conta per il torneo: a fine sessione aggiorna la classifica</small></button>
     <button class="btn choice" onclick="startSetup('ccdc')"><b>🤙 A cazz de cane</b><small>Solo per giocare: alla fine non salva niente</small></button>
     <button class="btn ghost" onclick="closeModal()">Annulla</button>`);
 }
@@ -595,7 +629,7 @@ function setupHTML() {
   const used = new Set(st.slots.map(s => s.sel).filter(v => v && v !== '__new'));
   return `<header class="top"><button class="btn sm ghost" onclick="goHome()">←</button><div class="title">${st.type === 'fism' ? '🏆 Partita Ufficiale FISM' : '🤙 A cazz de cane'}</div></header>
   <div class="scroll"><div class="setup">
-    <h3>Quanti giocatori? <small>(da 2 a 6)</small></h3>
+    <h3>Quanti giocatori? <small>(da 2 a 8)</small></h3>
     <div class="stepper"><button class="btn" onclick="setN(-1)">−</button><span>${st.n}</span><button class="btn" onclick="setN(1)">+</button></div>
     <h3>Giocatori in ordine</h3>
     ${st.slots.map((s, i) => `<div class="slot"><span class="num">${i + 1}</span>
@@ -609,7 +643,7 @@ function setupHTML() {
   </div></div>`;
 }
 function setN(d) {
-  const st = S.setup; st.n = Math.max(2, Math.min(6, st.n + d));
+  const st = S.setup; st.n = Math.max(2, Math.min(8, st.n + d));
   while (st.slots.length < st.n) st.slots.push({ sel: '', name: '', emoji: '' });
   st.slots.length = st.n; render();
 }
@@ -643,9 +677,15 @@ function gameHTML() {
   <div class="sheet ${S.sheetMin ? 'min' : ''}" id="sheet"><div class="sheet-toggle" id="sheetHandle"><span class="grab"></span>${sheetLabel()}</div>${sheetHTML()}</div></div>`;
   return `<header class="top"><button class="btn sm ghost" onclick="goHome()">←</button>
     <div class="title">Mano ${G.w.idx + 1}<small>${G.type === 'fism' ? '🏆 FISM' : '🤙 a cazz de cane'}</small></div>
-    <button class="btn sm" onclick="openGioc()">📜<span class="tl"> Giocate</span></button>
-    <button class="btn sm" onclick="askAddPlayer()">➕<span class="tl"> Giocatore</span></button>
     <button class="btn sm red" onclick="askEnd()">FINE SESSIONE</button></header>
+  <div class="tbar">
+    <button class="btn sm" onclick="openGioc()">📜 Giocate</button>
+    <button class="btn sm ${canAddPlayer() && G.players.length < 8 ? '' : 'dim'}" onclick="askAddPlayer()">➕ Giocatore</button>
+    <button class="btn sm ${S.editCols ? 'on' : ''}" onclick="S.editCols=!S.editCols;render()">${S.editCols ? '✓ Fatto' : '↔️ Modifica tabella'}</button>
+    ${G.last4 ? `<button class="btn sm on4" onclick="toast('Ultimi 4 mazzi: alla ${4}ª matta finisce la sessione')">🔚 Ultimi mazzi: ${Math.min(last4Done() + 1, 4)}/4</button>`
+              : `<button class="btn sm ${canLast4() ? 'u4' : 'dim'}" onclick="askLast4()">🔚 ULTIMI 4 MAZZI</button>`}
+  </div>
+  ${S.editCols ? `<div class="editbar">↔️ Usa ◀ ▶ sotto i nomi per spostare le colonne · poi tocca <b>✓ Fatto</b></div>` : ''}
   <div class="gbody"><div class="tw" id="tw">${tableHTML()}</div>
   <div class="sheet ${S.sheetMin ? 'min' : ''}" id="sheet"><div class="sheet-toggle" id="sheetHandle"><span class="grab"></span>${sheetLabel()}</div>${sheetHTML()}</div></div>`;
 }
@@ -666,7 +706,7 @@ function tableHTML() {
   S.mzOpen = S.mzOpen || {};
   segs.forEach(([a0, a1], si) => {
     const closed = !!G.cuts[a1];
-    const editingHere = G.w.idx != null && G.w.idx >= a0 && G.w.idx <= a1 && G.w.mode !== 'after' && G.w.mode !== 'sign';
+    const editingHere = G.w.idx != null && G.w.idx >= a0 && G.w.idx <= a1 && !['after', 'sign', 'final'].includes(G.w.mode);
     const open = !closed || S.mzOpen[a0] || editingHere;
     const start = run.slice();
     let rows = '';
@@ -707,8 +747,8 @@ function tableHTML() {
     }
   });
   const tot = totals();
-  return `<table class="sh ${P.length >= 5 ? 'compact' : ''}"><colgroup><col class="cn">${P.map(() => '<col>').join('')}</colgroup>
-    <thead><tr><th class="n">#</th>${P.map((p, i) => `<th class="${i === hlCol ? 'cur hl-' + G.w.mode : ''}" onclick="headTap(${i})"><div class="pe">${esc(p.emoji)}</div><div class="pn">${esc(p.name)}</div></th>`).join('')}</tr></thead>
+  return `<table class="sh ${P.length >= 5 ? 'compact' : ''} ${P.length >= 7 && (window.innerWidth || 390) < 700 ? 'xc' : ''} ${S.editCols ? 'editing' : ''}"><colgroup><col class="cn">${P.map(() => '<col>').join('')}</colgroup>
+    <thead><tr><th class="n">#</th>${P.map((p, i) => `<th class="${i === hlCol ? 'cur hl-' + G.w.mode : ''}" onclick="headTap(${i})"><div class="pe">${esc(p.emoji)}</div><div class="pn">${esc(p.name)}</div>${S.editCols ? `<div class="mv"><button onclick="event.stopPropagation();moveCol(${i},-1)" ${i === 0 ? 'disabled' : ''}>◀</button><button onclick="event.stopPropagation();moveCol(${i},1)" ${i === P.length - 1 ? 'disabled' : ''}>▶</button></div>` : ''}</th>`).join('')}</tr></thead>
     <tbody>${body}</tbody>
     <tfoot><tr><td class="n">Σ</td>${tot.map(t => `<td class="${sgn(t)} ${fmt(t).length >= 5 ? 'lg' : ''}">${fmt(t)}</td>`).join('')}</tr></tfoot></table>`;
 }
@@ -735,6 +775,7 @@ function sheetHTML() {
   if (w.mode === 'after') return afterSheet();
   if (w.mode === 'sign') return signSheet();
   if (w.mode === 'hist') return histSheet();
+  if (w.mode === 'final') return finalSheet();
   return '';
 }
 const pn = i => `${esc(G.players[i].emoji)} ${esc(G.players[i].name)}`;
@@ -783,7 +824,10 @@ function pickBet(v) {
   const w = G.w;
   if (v === 'M') for (const k in w.draft) if (w.draft[k] === 'M') delete w.draft[k];
   w.draft[w.i] = v;
-  const nx = betStep(w.i, 1);
+  // prossimo giocatore che non ha ancora puntato (seguendo l'ordine dal mazziere)
+  const seq = playOrder(w.draft), pos = seq.indexOf(w.i);
+  const todo = [...seq.slice(pos + 1), ...seq.slice(0, Math.max(pos, 0))].filter(k => w.draft[k] === undefined);
+  const nx = todo.length ? todo[0] : -1;
   if (w.single && w.back != null) { w.single = false; w.i = w.back; w.back = null; }
   else if (w.single || nx < 0) { w.single = false; w.review = true; } else w.i = nx;
   commit();
@@ -893,7 +937,7 @@ function afterSheet() {
   return `<h3>✅ Mano ${w.idx + 1} chiusa · ${pn(d)} <span class="${sgn(dd)}">${fmt(dd)}</span></h3>
     <div class="grid g2">
       <button class="btn primary" style="padding:18px 8px;font-size:17px" onclick="nextHand()">▶ Continua<small>stesso mazziere</small></button>
-      <button class="btn" style="padding:18px 8px;font-size:17px;border-color:var(--gold)" onclick="matta()">🃏 È uscita la matta<small>riga, firma e nuovo mazziere</small></button>
+      <button class="btn" style="padding:18px 8px;font-size:17px;border-color:var(--gold)" onclick="matta()">🃏 È uscita la matta<small>${isLastMazzo() ? 'ultimo mazzo: firma e fine sessione' : 'riga, firma e nuovo mazziere'}</small></button>
     </div>
     <div class="row"><button class="btn sm ghost" onclick="handMenu(${w.idx})">✏️ Modifica questa mano</button></div>`;
 }
@@ -915,7 +959,7 @@ function signSheet() {
     <div class="signrow"><span class="muted">Firma:</span><select id="signer">${G.players.map((_, i) => `<option value="${i}" ${i === d ? 'selected' : ''}>${pn(i)}</option>`).join('')}</select></div>
     <canvas id="sig"></canvas>
     <div class="row"><button class="btn sm" onclick="initSig(true)">Cancella firma</button><button class="btn sm ghost" onclick="G.w={mode:'after',idx:G.w.idx};commit()">◀ Indietro</button></div>
-    <button class="btn primary big" onclick="doSign()">✍️ Firma e nuovo mazzo</button>`;
+    <button class="btn primary big" onclick="doSign()">${isLastMazzo() ? '✍️ Firma e chiudi la sessione' : '✍️ Firma e nuovo mazzo'}</button>`;
 }
 let sigInk = false;
 function initSig() {
@@ -936,8 +980,36 @@ function doSign() {
   out.getContext('2d').drawImage(c, 0, 0, out.width, out.height);
   const si = +$('#signer').value;
   G.cuts[G.w.idx] = { signer: G.players[si].name, sig: out.toDataURL('image/png'), t: Date.now() };
+  if (G.last4 && last4Done() >= 4) { G.w = { mode: 'final', idx: G.w.idx }; commit(); toast('Era l’ultimo mazzo 🏁'); setTimeout(askEnd, 300); return; }
   nextHand(false);
-  toast('Mazzo firmato ✍️ Si rimischia!');
+  toast(G.last4 ? `Mazzo firmato ✍️ Ultimi mazzi: ${last4Done() + 1}/4` : 'Mazzo firmato ✍️ Si rimischia!');
+}
+
+/* --- SPOSTA LE COLONNE (Modifica tabella) --- */
+function moveCol(i, d) {
+  const j = i + d; if (j < 0 || j >= G.players.length) return;
+  const sw = n => n === i ? j : n === j ? i : n;
+  const remap = o => { const r = {}; Object.keys(o || {}).forEach(k => r[sw(+k)] = o[k]); return r; };
+  const fixW = w => { if (!w) return; if (w.draft) w.draft = remap(w.draft); if (typeof w.i === 'number') w.i = sw(w.i); if (typeof w.back === 'number') w.back = sw(w.back); fixW(w.ret); };
+  G.hands.forEach(h => { h.bets = remap(h.bets); h.res = remap(h.res); });
+  fixW(G.w);
+  [G.players[i], G.players[j]] = [G.players[j], G.players[i]];
+  commit();
+}
+
+/* --- ULTIMI 4 MAZZI --- */
+const last4Done = () => G.last4 ? Object.keys(G.cuts).map(Number).filter(k => k >= G.last4.start).length : 0;
+const canLast4 = () => !G.last4 && canAddPlayer() && Object.keys(G.cuts).length > 0;
+function askLast4() {
+  if (G.last4) return;
+  if (!canLast4()) return toast('Puoi farlo solo quando è finito un mazzo: dopo la matta, prima di scegliere il nuovo mazziere');
+  confirmModal('🔚 ULTIMI 4 MAZZI?', 'Da adesso si giocano solo altri <b>4 mazzi</b>: alla 4ª matta la sessione finisce.', '🔚 Sì, ultimi 4 mazzi', () => { G.last4 = { start: G.w.idx }; commit(); toast('Ultimi 4 mazzi: si parte col mazzo 1 di 4'); }, false);
+}
+const isLastMazzo = () => G.last4 && last4Done() === 3;
+function finalSheet() {
+  return `<h3>🏁 Finiti gli ultimi 4 mazzi</h3>
+    <p class="muted" style="margin:0 0 8px">La sessione è finita: controlla i risultati e chiudila.</p>
+    <button class="btn red big" onclick="askEnd()">🏁 Chiudi la sessione ▶</button>`;
 }
 
 /* --- AGGIUNGI UN GIOCATORE (solo a inizio mazzo) --- */
@@ -945,7 +1017,7 @@ const canAddPlayer = () => G.w.mode === 'bets' && !G.w.ret && !G.w.single && !G.
 function askAddPlayer() {
   if (G.editOf) return;
   if (!canAddPlayer()) return toast('Puoi aggiungere un giocatore solo quando finisce il mazzo: dopo la matta, prima di scegliere il mazziere');
-  if (G.players.length >= 6) return toast('Siete già in 6: è il massimo');
+  if (G.players.length >= 8) return toast('Siete già in 8: è il massimo');
   const P = G.players, avail = regList().filter(p => !P.some(q => q.id === p.id));
   const pos = P.map((_, k) => k === 0 ? `All’inizio (prima di ${P[0].emoji} ${P[0].name})` : `Tra ${P[k - 1].emoji} ${P[k - 1].name} e ${P[k].emoji} ${P[k].name}`);
   pos.push(`In fondo (dopo ${P[P.length - 1].emoji} ${P[P.length - 1].name})`);
@@ -1064,7 +1136,7 @@ function sheetLabel() {
   if (!S.sheetMin) return 'tira giù per vedere tutta la tabella';
   const w = G.w;
   if (w.mode === 'bets' && w.draft && Object.values(w.draft).includes('M') && !w.review) return `▲ Tira su · puntata di ${esc(G.players[w.i]?.name || '')}`;
-  return '▲ Tira su · ' + ({ bets: 'puntate', res: 'risultati', wait: 'mano in gioco', after: 'mano chiusa', sign: 'firma', hist: 'modifica' }[w.mode] || 'pannello');
+  return '▲ Tira su · ' + ({ final: 'fine sessione', bets: 'puntate', res: 'risultati', wait: 'mano in gioco', after: 'mano chiusa', sign: 'firma', hist: 'modifica' }[w.mode] || 'pannello');
 }
 // tendina: si trascina giù per chiuderla e su per riaprirla (o si tocca)
 function initSheetDrag() {
