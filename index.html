@@ -285,6 +285,10 @@ tr.mzt td.n{color:var(--gold)}
 .tbar .btn.u4{border-color:#e0442f;color:#ff8a78}
 .tbar .btn.on4{background:#3a2320;border-color:#e0442f;color:#ffb4a8}
 .editbar{flex:none;background:#3a3220;color:var(--gold);font-size:13px;padding:6px 12px;text-align:center}
+.sh.editing thead th[data-col]{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:grab;outline:1px dashed rgba(232,184,74,.55);outline-offset:-4px}
+.sh thead th.lifted{z-index:10;background:var(--gold)!important;color:#141414;box-shadow:0 8px 22px rgba(0,0,0,.6);border-radius:8px;transition:none;cursor:grabbing}
+.sh thead th.drop-l{box-shadow:inset 4px 0 0 var(--gold)}
+.sh thead th.drop-r{box-shadow:inset -4px 0 0 var(--gold)}
 .mv{display:flex;justify-content:center;gap:4px;margin-top:3px}
 .mv button{background:#3a3a37;color:var(--chalk);border:1px solid #555;border-radius:8px;width:30px;height:26px;font-size:12px;padding:0;cursor:pointer}
 .mv button:disabled{opacity:.25}
@@ -695,7 +699,7 @@ function gameHTML() {
     ${G.last4 ? `<button class="btn sm on4" onclick="toast('Ultimi 4 mazzi: alla ${4}ª matta finisce la sessione')">🔚 Ultimi mazzi: ${Math.min(last4Done() + 1, 4)}/4</button>`
               : `<button class="btn sm ${canLast4() ? 'u4' : 'dim'}" onclick="askLast4()">🔚 ULTIMI 4 MAZZI</button>`}
   </div>
-  ${S.editCols ? `<div class="editbar">↔️ Usa ◀ ▶ sotto i nomi per spostare le colonne · poi tocca <b>✓ Fatto</b></div>` : ''}
+  ${S.editCols ? `<div class="editbar">↔️ Tieni premuto il nome di un giocatore e trascinalo a destra o sinistra · poi tocca <b>✓ Fatto</b></div>` : ''}
   <div class="gbody"><div class="tw" id="tw">${tableHTML()}</div>
   <div class="sheet ${S.sheetMin ? 'min' : ''}" id="sheet"><div class="sheet-toggle" id="sheetHandle"><span class="grab"></span>${sheetLabel()}</div>${sheetHTML()}</div></div>`;
 }
@@ -749,7 +753,7 @@ function tableHTML() {
       const n = a1 - a0 + 1, c = G.cuts[a1];
       const head = `<tr class="mzh" onclick="toggleMz(${a0})"><td colspan="${P.length + 1}"><div class="mzlab"><span class="arr">${open ? '▾' : '▸'}</span> Mazzo ${si + 1} · ${n} ${n === 1 ? 'turno' : 'turni'} <span class="muted">· firmato da ${esc(c.signer)}</span></div></td></tr>`;
       const tots = `<tr class="mzt" onclick="toggleMz(${a0})"><td class="n">Σ</td>${P.map((_, i) => { const d = run[i] - start[i];
-        return `<td><div class="mzd">${d ? fmt(d) : '0'}</div></td>`; }).join('')}</tr>`;
+        return `<td><div class="mzd">${fmt(run[i])}</div></td>`; }).join('')}</tr>`;
       body += head + (open ? rows + `<tr class="cut"><td colspan="${P.length + 1}"><div class="cutbox"><span>🃏 È uscita la matta · firmato da <b>${esc(c.signer)}</b></span>${c.sig ? `<img src="${c.sig}" alt="firma">` : ''}</div></td></tr>` : '') + tots;
     } else {
       const n = a1 - a0 + 1;
@@ -758,7 +762,7 @@ function tableHTML() {
   });
   const tot = totals();
   return `<table class="sh ${P.length >= 5 ? 'compact' : ''} ${P.length >= 7 && (window.innerWidth || 390) < 700 ? 'xc' : ''} ${S.editCols ? 'editing' : ''}"><colgroup><col class="cn">${P.map(() => '<col>').join('')}</colgroup>
-    <thead><tr><th class="n">#</th>${P.map((p, i) => `<th class="${i === hlCol ? 'cur hl-' + G.w.mode : ''}" onclick="headTap(${i})"><div class="pe">${esc(p.emoji)}</div><div class="pn">${esc(p.name)}</div>${S.editCols ? `<div class="mv"><button onclick="event.stopPropagation();moveCol(${i},-1)" ${i === 0 ? 'disabled' : ''}>◀</button><button onclick="event.stopPropagation();moveCol(${i},1)" ${i === P.length - 1 ? 'disabled' : ''}>▶</button></div>` : ''}</th>`).join('')}</tr></thead>
+    <thead><tr><th class="n">#</th>${P.map((p, i) => `<th class="${i === hlCol ? 'cur hl-' + G.w.mode : ''}" data-col="${i}" onclick="headTap(${i})"><div class="pe">${esc(p.emoji)}</div><div class="pn">${esc(p.name)}</div></th>`).join('')}</tr></thead>
     <tbody>${body}</tbody>
     <tfoot><tr><td class="n">Σ</td>${tot.map(t => `<td class="${sgn(t)} ${fmt(t).length >= 5 ? 'lg' : ''}">${fmt(t)}</td>`).join('')}</tr></tfoot></table>`;
 }
@@ -774,6 +778,7 @@ function afterGameRender(keep) {
   } else if (!keep && tw && G.w.idx === G.hands.length - 1) tw.scrollTop = tw.scrollHeight;
   if (G.w.mode === 'sign') initSig();
   initSheetDrag();
+  initColDrag();
   wake();
 }
 
@@ -996,7 +1001,7 @@ function doSign() {
 }
 
 /* --- SPOSTA LE COLONNE (Modifica tabella) --- */
-function moveCol(i, d) {
+function moveCol(i, d, noCommit) {
   const j = i + d; if (j < 0 || j >= G.players.length) return;
   const sw = n => n === i ? j : n === j ? i : n;
   const remap = o => { const r = {}; Object.keys(o || {}).forEach(k => r[sw(+k)] = o[k]); return r; };
@@ -1004,7 +1009,43 @@ function moveCol(i, d) {
   G.hands.forEach(h => { h.bets = remap(h.bets); h.res = remap(h.res); });
   fixW(G.w);
   [G.players[i], G.players[j]] = [G.players[j], G.players[i]];
+  if (!noCommit) commit();
+}
+function moveColTo(from, to) {
+  if (from === to) return;
+  const d = to > from ? 1 : -1;
+  for (let k = from; k !== to; k += d) moveCol(k, d, true);
   commit();
+}
+// Modifica tabella: tieni premuto il nome, la casella si ingrandisce e la trascini
+function initColDrag() {
+  if (!S.editCols) return;
+  document.querySelectorAll('.sh thead th[data-col]').forEach(th => {
+    let timer = null, x0 = 0, y0 = 0, lifted = false, from = +th.dataset.col, to = from;
+    const ths = () => [...document.querySelectorAll('.sh thead th[data-col]')];
+    const clearMarks = () => ths().forEach(t => t.classList.remove('drop-l', 'drop-r'));
+    th.onpointerdown = e => {
+      x0 = e.clientX; y0 = e.clientY; lifted = false; from = +th.dataset.col; to = from;
+      th.setPointerCapture(e.pointerId);
+      timer = setTimeout(() => { lifted = true; th.classList.add('lifted'); try { navigator.vibrate && navigator.vibrate(15); } catch (_) {} }, 300);
+    };
+    th.onpointermove = e => {
+      const dx = e.clientX - x0;
+      if (!lifted) { if (Math.abs(dx) > 10 || Math.abs(e.clientY - y0) > 10) { clearTimeout(timer); } return; }
+      th.style.transform = `translateX(${dx}px) scale(1.12)`;
+      const all = ths(), w = th.getBoundingClientRect().width / 1.12;
+      to = Math.max(0, Math.min(all.length - 1, from + Math.round(dx / w)));
+      clearMarks();
+      if (to !== from) all[to].classList.add(to > from ? 'drop-r' : 'drop-l');
+    };
+    th.onpointerup = th.onpointercancel = () => {
+      clearTimeout(timer);
+      if (!lifted) return;
+      S.dragEnd = Date.now(); lifted = false;
+      th.classList.remove('lifted'); th.style.transform = ''; clearMarks();
+      if (to !== from) moveColTo(from, to);
+    };
+  });
 }
 
 /* --- ULTIMI 4 MAZZI --- */
@@ -1196,6 +1237,7 @@ function flashRow(i) {
   el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
 }
 function headTap(i) {
+  if (S.editCols || (S.dragEnd && Date.now() - S.dragEnd < 400)) return;
   const w = G.w;
   if (w.mode === 'bets' || w.mode === 'res') cellTap(w.idx, i);
 }
