@@ -570,9 +570,19 @@ function tryLogin() {
 /* ---------- render ---------- */
 function render() {
   const a = $('#app');
+  if (S.view !== 'game') S._rk = null;
   if (S.view === 'home') a.innerHTML = homeHTML();
   else if (S.view === 'setup') a.innerHTML = setupHTML();
-  else if (S.view === 'game' && G) { a.innerHTML = gameHTML(); afterGameRender(); }
+  else if (S.view === 'game' && G) {
+    // se si resta sulla stessa schermata (es. +/− dei risultati) la lista non deve tornare in cima
+    const key = [G.editOf || '', G.w.mode, G.w.idx, !!G.w.rv, !!G.w.review, !!S.sheetMin].join('|');
+    const sh = $('#sheet'), tw = $('#tw');
+    const keep = S._rk === key && sh ? { s: sh.scrollTop, t: tw?.scrollTop || 0, l: tw?.scrollLeft || 0 } : null;
+    a.innerHTML = gameHTML(); S._rk = key;
+    const keepTable = !!keep && G.w.mode === 'res';
+    afterGameRender(keepTable);
+    if (keep) { const sh2 = $('#sheet'), tw2 = $('#tw'); if (sh2) sh2.scrollTop = keep.s; if (tw2 && keepTable) { tw2.scrollTop = keep.t; tw2.scrollLeft = keep.l; } }
+  }
   else if (S.view === 'summary' && G) a.innerHTML = summaryHTML();
   else if (S.view === 'giocate' && G) { a.innerHTML = giocHTML(); const sc = $('#gsc'); if (sc) sc.scrollTop = sc.scrollHeight; }
   else if (S.view === 'load') { a.innerHTML = loadHTML(); updLoadSum(); }
@@ -753,15 +763,15 @@ function tableHTML() {
     <tfoot><tr><td class="n">Σ</td>${tot.map(t => `<td class="${sgn(t)} ${fmt(t).length >= 5 ? 'lg' : ''}">${fmt(t)}</td>`).join('')}</tr></tfoot></table>`;
 }
 function toggleMz(a0) { S.mzOpen = S.mzOpen || {}; S.mzOpen[a0] = !S.mzOpen[a0]; render(); }
-function afterGameRender() {
+function afterGameRender(keep) {
   const tw = $('#tw');
-  const c = tw && tw.querySelector('td.cur');
+  const c = !keep && tw && tw.querySelector('td.cur');
   if (c) {   // porta in vista la casella del giocatore di turno
     const row = c.parentElement;
     tw.scrollLeft = Math.max(0, c.offsetLeft - tw.clientWidth / 2 + c.offsetWidth / 2);
     if (G.w.idx === G.hands.length - 1) tw.scrollTop = tw.scrollHeight;
     else tw.scrollTop = Math.max(0, row.offsetTop - 70);
-  } else if (tw && G.w.idx === G.hands.length - 1) tw.scrollTop = tw.scrollHeight;
+  } else if (!keep && tw && G.w.idx === G.hands.length - 1) tw.scrollTop = tw.scrollHeight;
   if (G.w.mode === 'sign') initSig();
   initSheetDrag();
   wake();
